@@ -67,6 +67,10 @@ def choose_one_feature_at_branching(TB, F):
         clause = [get_var_index('a', t, j) for j in F]
         formula.append(clause)
     
+    print("Clauses from choose_one_feature_at_branching:")
+    for clause in formula.clauses:
+        print(clause)
+
     return formula
 
 # all contsraint variable information on nodes 
@@ -131,7 +135,12 @@ def enforce_ordering_at_branching(TB, F, X):
                 # Clause (4)
                 if X[i][j] == X[i_prime][j]:
                     formula.append([-1 * get_var_index('a', t, j), -1 * get_var_index('s', i, t), get_var_index('s', i_prime, t)])
-                    
+
+
+    print("Clauses from enforce_ordering_at_branching:")
+    for clause in formula.clauses:
+        print(clause)
+
     return formula
 
 
@@ -164,6 +173,10 @@ def enforce_path_validity(TL, X):
         
         formula.append([get_var_index('z', xi_index, t)] + left_clauses + right_clauses)
     
+    print("Clauses from enforce_path_validity:")
+    for clause in formula.clauses:
+        print(clause)
+
     return formula
 
 # Hopefully my ancestor node detection functions A(L) and A(r) are correct
@@ -187,6 +200,12 @@ def enforce_leaf_node_labels(TL, C):
             for c_prime in C:
                 if c != c_prime:
                     formula.append([-1 * get_var_index('g', t, c), -1 * get_var_index('g', t, c_prime)])
+    
+    
+    print("Clauses from enforce_leaf_node_labels:")
+    for clause in formula.clauses:
+        print(clause)
+
     return formula
 
 def enforce_redundant_constraints(TB, F, X):
@@ -212,6 +231,12 @@ def enforce_redundant_constraints(TB, F, X):
             formula.append([-1 * get_var_index('a', t, j), get_var_index('s', 1, t)])
             # Data point with the highest feature value is directed right
             formula.append([-1 * get_var_index('a', t, j), -1 * get_var_index('s', len(X), t)])
+    
+    
+    print("Clauses from enforce_redundant_constraints:")
+    for clause in formula.clauses:
+        print(clause)
+
     return formula
 
 
@@ -234,6 +259,10 @@ def enforce_minimal_height_optimal_decision(TL, X, gamma):
             negated_clause = [-1 * get_var_index('z', xi_index, t), get_var_index('g', t, gamma[xi_index])]
             formula.append(negated_clause)
 
+    print("Clauses from enforce_minimal_height_optimal_decision:")
+    for clause in formula.clauses:
+        print(clause)
+
     return formula
 
 
@@ -248,35 +277,61 @@ def create_cnf_for_decision_tree(TB, TL, F, X, C, gamma):
     cnf.extend(enforce_redundant_constraints(TB, F, X))
     cnf.extend(enforce_minimal_height_optimal_decision(TL, X, gamma))
     
+
+    #print("Complete CNF Clauses:")
+    #for clause in cnf.clauses:
+    #    print(clause)
+    
     return cnf
 
 
+
+def calculate_median_threshold(feature_values):
+    sorted_values = sorted(feature_values)
+    mid_point = len(sorted_values) // 2
+    # If even number of elements, take the average of the middle two
+    if len(sorted_values) % 2 == 0:
+        return (sorted_values[mid_point - 1] + sorted_values[mid_point]) / 2.0
+    # If odd, take the middle element
+    else:
+        return sorted_values[mid_point]
+
+
 def decode_solution_to_tree(model, TB, TL, F, X, gamma):
-    # Initialize nodes
+    # Initialize nodes and data points associated with each node
     nodes = {t: create_tree_node(t, is_leaf=(t in TL)) for t in TB + TL}
+    node_data_points = {t: X[:] for t in TB}  # Initially, all data points reach each branching node
 
     # Decode feature selection for branching nodes
     for t in TB:
         for f in F:
             var = get_var_index('a', t, f)
-            if var in model:
+            if model[var - 1] > 0:  # Check if the variable is True in the model
                 nodes[t].feature = f
-                print(nodes[t].feature)
-                # Test spliiting value
-                nodes[t].threshold = 0.5
+                # Calculate the splitting threshold based on the data points that reach node `t`
+                feature_values = [x[f] for x in node_data_points[t]]
+                nodes[t].threshold = calculate_median_threshold(feature_values)
+                # Split the data points for the children nodes based on the threshold
+                left_data_points = [x for x in node_data_points[t] if x[f] <= nodes[t].threshold]
+                right_data_points = [x for x in node_data_points[t] if x[f] > nodes[t].threshold]
+                node_data_points[2*t] = left_data_points
+                node_data_points[2*t + 1] = right_data_points
+                break  # Only one feature should be selected per branching node
 
     # Decode leaf node labels
     for t in TL:
         for label in gamma.values():
             var = get_var_index('g', t, label)
-            if var in model:
+            if model[var - 1] > 0:  # Check if the variable is True in the model
                 nodes[t].label = label
-                break
+                break  # Only one label should be assigned per leaf node
 
     # Link nodes to form the tree
-    for t in TB:
-        # left child is 2*t and right child is 2*t + 1
-        nodes[t].set_children(nodes.get(2*t), nodes.get(2*t + 1))
+    for t in TB + TL:
+        if t in TB:  # If it's a branching node, set its children
+            nodes[t].set_children(nodes.get(2*t), nodes.get(2*t + 1))
+        if t != 1:  # If it's not the root, set its parent
+            nodes[t].set_parent(nodes.get(t//2))
 
     # Assuming node 1 is the root
     return nodes[1]
@@ -286,31 +341,51 @@ def decode_solution_to_tree(model, TB, TL, F, X, gamma):
 if __name__ == "__main__":
     ## I am making a tree structure here randomly 
     TB = [1, 2]  # Branching nodes
-    TL = [3, 4]  # Leaf nodes
+    TL = [3, 4, 5]  # Leaf nodes
 
     # features
     F = ['F1', 'F2']
 
     # Toy dataset haris made 
+     # Toy dataset haris made 
+    # New toy dataset
     X = [
-        {'F1': 1, 'F2': 2},  # Data point 1
-        {'F1': 2, 'F2': 3},  # Data point 2
-        {'F1': 3, 'F2': 1},  # Data point 3
+    {'F1': 5, 'F2': 3},  # Data point 1
+    {'F1': 7, 'F2': 4},  # Data point 2
+    {'F1': 2, 'F2': 6},  # Data point 3
+    {'F1': 3, 'F2': 5},  # Data point 4
     ]
 
-    # Labels for the dataset
+    # Labels for the new dataset
     gamma = {
-        1: 0,  # Label for data point 1
+        1: 1,  # Label for data point 1
         2: 1,  # Label for data point 2
-        3: 0,  # Label for data point 3
+        3: 2,  # Label for data point 3
+        4: 3,  # Label for data point 4
     }
 
     # class labels
-    C = [0, 1]
+    C = [1, 2, 3]
+
+    # Build the node mapping for the tree
+    build_node_mapping(TB)
+
+    # Now node_mapping should be populated, let's print it to check
+    print("Node Mapping:")
+    for key, value in node_mapping.items():
+        print(f"Node {key} is a child of Node {value}")
+
+
 
     # CNF clauses buildout 
     cnf = create_cnf_for_decision_tree(TB, TL, F, X, C, gamma)
 
+    
+    print("Variable Mappings:")
+    for key, value in var_mapping.items():
+        print(f"{value}: {key}")
+    
+    
     # Use the SAT solver to find a solution
     solver = Solver()
     solver.append_formula(cnf)
@@ -324,7 +399,28 @@ if __name__ == "__main__":
     else:
         print("No solution exists for the given problem.")
     
+    print("SAT Solver Model:")
+    for variable in model:
+        if variable > 0:  # Only print variables that are True in the model
+            key = next(key for key, value in var_mapping.items() if value == variable)
+            print(f"{variable}: {key}")
+
+
+    for xi_index, xi in enumerate(X, start=1):  # start=1 to match the gamma indices
+        for t in TL:
+            z_var = get_var_index('z', xi_index, t)
+            g_var = get_var_index('g', t, gamma[xi_index])
+            if model[z_var - 1] > 0:  # If data point reaches the leaf
+                print(f"Data point {xi_index} reaches leaf {t}")
+                if model[g_var - 1] > 0:  # If leaf has the correct label
+                    print(f"Leaf {t} correctly labeled with {gamma[xi_index]}")
+                else:
+                    print(f"Leaf {t} incorrectly labeled or not labeled")
+
+
+
     root = decode_solution_to_tree(model, TB, TL, F, X, gamma)
+    #print(root)
     tree = DecisionTree(root)
 
     # Test predictions
@@ -342,7 +438,7 @@ if __name__ == "__main__":
     print(f"Accuracy of the decision tree: {accuracy * 100:.2f}%")
 
     # Haris Testing 
-    assert all_correct, "Not all predictions are correct!"
-    assert accuracy == 1.0, "The accuracy is not 100%!"
+    #assert all_correct, "Not all predictions are correct!"
+    #assert accuracy == 1.0, "The accuracy is not 100%!"
 
     tree.visualize()

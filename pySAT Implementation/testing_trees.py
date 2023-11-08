@@ -108,10 +108,10 @@ if __name__ == "__main__":
 
     # Define a small dataset with known labels
     X = [
-        {'F1': 4, 'F2': 2},  # Should be classified as 0
-        {'F1': 6, 'F2': 4},  # Should be classified as 1
-        {'F1': 11, 'F2': 3}, # Should be classified as 0
-        {'F1': 9, 'F2': 5}   # Should be classified as 1
+    {'F1': 5, 'F2': 3},  # Data point 1
+    {'F1': 7, 'F2': 4},  # Data point 2
+    {'F1': 2, 'F2': 6},  # Data point 3
+    {'F1': 3, 'F2': 5},  # Data point 4
     ]
 
     # Labels for the dataset
