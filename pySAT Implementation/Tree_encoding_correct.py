@@ -10,11 +10,7 @@ from graphviz import Digraph
 # Define the function to build a complete tree of a given depth
 def build_complete_tree(depth):
     """
-    Construct a complete binary tree of a specified depth.
-
-    Each node in the tree is represented as a dictionary in a list. The root node is at index 0.
-    Branching nodes have the 'type' key set to 'branching' and a 'children' key listing their children's indices.
-    Leaf nodes have the 'type' key set to 'leaf'.
+    Construct a complete binary tree of a specified depth with feature and threshold values for branching nodes.
 
     Parameters:
     - depth (int): The depth of the tree, with the root node at depth 0.
@@ -24,23 +20,27 @@ def build_complete_tree(depth):
     - TB (list): The indices of the branching nodes within the tree list.
     - TL (list): The indices of the leaf nodes within the tree list.
     """
-
-    # Calculate the total number of nodes in a complete binary tree of the given depth
     num_nodes = (2 ** (depth + 1)) - 1
-    # Initialize tree structure with placeholders for each node
     tree_structure = [None] * num_nodes
-    # Initialize the list of branching nodes and leaf nodes
     TB, TL = [], []
-    # Fill in the tree structure and identify branching and leaf nodes
+
     for node in range(num_nodes):
         if node < ((2 ** depth) - 1):
             TB.append(node)
-            tree_structure[node] = {'type': 'branching', 'children': [2 * node + 1, 2 * node + 2]}
+            # Include feature and threshold keys for branching nodes
+            tree_structure[node] = {
+                'type': 'branching', 
+                'children': [2 * node + 1, 2 * node + 2], 
+                'feature': None, 
+                'threshold': None
+            }
         else:
             TL.append(node)
             tree_structure[node] = {'type': 'leaf', 'label': None}
     
     return tree_structure, TB, TL
+
+
 
 # Define the function to create literals based on the tree structure
 def create_literals(TB, TL, F, C, dataset_size):
@@ -163,26 +163,7 @@ def build_clauses(literals, X, TB, TL, num_features, labels,true_labels):
                     cnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i}_{t}'], -literals[f's_{ip}_{t}']])
                     cnf.append([-literals[f'a_{t}_{j}'], -literals[f's_{i}_{t}'], literals[f's_{ip}_{t}']])
 
-    # # Clause (5) and (6): Path validity based on ancestors
-    # for t in TL:
-    #     left_ancestors = get_ancestors(t, 'left')
-    #     right_ancestors = get_ancestors(t, 'right')
-    #     for i in range(len(X)):
-    #         # Data point i ends at leaf node t (Clause 5 and 6)
-    #         cnf.append([-literals[f'z_{i}_{t}']] + [literals[f's_{i}_{a}'] for a in left_ancestors])
-    #         cnf.append([-literals[f'z_{i}_{t}']] + [-literals[f's_{i}_{a}'] for a in right_ancestors])
-
-    # # Clause (7): Each data point that does not end up in leaf node t has at least one deviation from the path
-    # for xi in range(len(X)):
-    #     for t in TL:
-    #         deviations = []
-    #         left_ancestors = get_ancestors(t, 'left')  # Get left ancestors using TB indices
-    #         right_ancestors = get_ancestors(t, 'right')  # Get right ancestors using TB indices
-    #         for ancestor in left_ancestors:
-    #             deviations.append(-literals[f's_{xi}_{ancestor}'])
-    #         for ancestor in right_ancestors:
-    #             deviations.append(literals[f's_{xi}_{ancestor}'])
-    #         cnf.append([-literals[f'z_{xi}_{t}']] + deviations)
+    # Clause (5 and 6): Path valididty form right traversla and left traversal 
     for t in TL:
         left_ancestors = get_ancestors(t, 'left')
         right_ancestors = get_ancestors(t, 'right')
@@ -237,7 +218,51 @@ def build_clauses(literals, X, TB, TL, num_features, labels,true_labels):
     
     return cnf
 
-def solve_cnf(cnf, literals, TL, tree_structure, labels):
+def set_branch_node_details(model, literals, tree_structure,features,dataset):
+    """
+    Set the chosen feature and threshold for each branching node in the tree structure
+    based on the given SAT model.
+
+    Args:
+    - model (list): The model returned by the SAT solver.
+    - literals (dict): A dictionary mapping literals to variable indices.
+    - tree_structure (list): The complete binary tree structure.
+    - dataset (list): The dataset, a list of tuples representing data points.
+    - features (list): List of features in the dataset.
+    """
+    # For each branching node, determine the chosen feature and threshold
+    for node_index in range(len(tree_structure)):
+        node = tree_structure[node_index]
+        if node['type'] == 'branching':
+            # Find which feature is used for splitting at the current node
+            chosen_feature = None
+            for feature in features:
+                if literals[f'a_{node_index}_{feature}'] in model:
+                    chosen_feature = feature
+                    break
+            
+            # If a feature is chosen, set the feature and find the threshold
+            if chosen_feature is not None:
+                # Set the chosen feature and computed threshold in the tree structure
+                node['feature'] = chosen_feature
+
+                # Sort the data points based on the chosen feature
+                sorted_data_points = sorted(enumerate(dataset), key=lambda x: x[1][int(chosen_feature)])
+
+                # Find the transition point where 's' literals change from true to false
+                split_index = None
+                for i, (index, _) in enumerate(sorted_data_points[:-1]):
+                    if literals[f's_{index}_{node_index}'] in model and literals[f's_{sorted_data_points[i + 1][0]}_{node_index}'] not in model:
+                        split_index = i
+                        break
+
+                if split_index is not None:
+                    # Compute the threshold as the average value between the two points around the split
+                    threshold_value = (sorted_data_points[split_index][1][int(chosen_feature)] + sorted_data_points[split_index + 1][1][int(chosen_feature)]) / 2
+                    node['threshold'] = threshold_value
+
+
+def solve_cnf(cnf, literals, TL, tree_structure, labels,features,dataset):
     """
     Attempts to solve the given CNF using a SAT solver.
 
@@ -263,6 +288,8 @@ def solve_cnf(cnf, literals, TL, tree_structure, labels):
                 if literals[f'g_{t}_{label}'] in model:
                     tree_structure[t]['label'] = label
                     break
+         # Set details for branching nodes
+        set_branch_node_details(model, literals, tree_structure,features,dataset)
         return model
     else:
         print("no solution!")
@@ -271,12 +298,12 @@ def solve_cnf(cnf, literals, TL, tree_structure, labels):
 def add_nodes(dot, tree, node_index=0):
     node = tree[node_index]
     if node['type'] == 'branching':
-        dot.node(str(node_index), label=f"Branch\n{node_index}")
+        dot.node(str(node_index), label=f"BranchNode:\n{node_index}\nFeature:{node['feature']}\nThreshold:{node['threshold']}")
         for child_index in node['children']:
             add_nodes(dot, tree, child_index)
             dot.edge(str(node_index), str(child_index))
     elif node['type'] == 'leaf':
-        dot.node(str(node_index), label=f"Leaf\n{node_index}\nLabel: {node['label']}")
+        dot.node(str(node_index), label=f"LeafNode:\n{node_index}\nLabel: {node['label']}")
 
 def visualize_tree(tree_structure):
     dot = Digraph()
@@ -288,19 +315,19 @@ if __name__ == "__main__":
     # Define the test dataset parameters
     
     # Test case 1 provided by pouya 
-    depth = 2
-    features = ['0', '1']
-    labels = [1,0]
-    true_labels_for_points = [1,0,0,0]
-    dataset = [(1,1), (3,3), (3,1), (1,3)]  # Dataset X
+    #depth = 2
+    #features = ['0', '1']
+    #labels = [1,2,3,4]
+    #true_labels_for_points = [1,2,3,4]
+    #dataset = [(1,1), (3,3), (3,1), (1,3)]  # Dataset X
 
 
-    #Test case 2
-    #depth = 1
-    #features = ['0','1']
-    #labels = [0,1]
-    #true_labels_for_points = [0,1]
-    #dataset = [(1,0),(1,2)]
+    # Test case 2
+    depth = 1
+    features = ['0','1']
+    labels = [0,1]
+    true_labels_for_points = [0,1]
+    dataset = [(1,1),(1,2)]
 
 
     # Build the complete tree
@@ -308,34 +335,15 @@ if __name__ == "__main__":
 
     # Create literals based on the tree structure and dataset
     literals = create_literals(TB, TL, features, labels, len(dataset))
-    #print(literals)
+    print(literals)
 
-    # Print the tree structure and literals for verification
-    #print("Complete Binary Tree Structure:")
-    #print(tree)
-    #print("\nBranching Nodes (TB):", TB)
-    #print("Leaf Nodes (TL):", TL)
+
 
     #print("\nLiterals Created:")
     #for literal, index in literals.items():
     #    print(f"{literal}: {index}")
     
-    # Testing the get_ancestors function for left and right ancestors of a leaf node
-    #left_ancestors = get_ancestors(5, 'left')  # Should return the root for the first leaf
-    #right_ancestors = get_ancestors(4, 'right')  # Should return the root for the second leaf
-
-    #print(f"Left ancestors of leaf node {5}: {left_ancestors}")
-    #print(f"Right ancestors of leaf node {4}: {right_ancestors}")
-
-
-    #feature orderings Testing:
-    # a = compute_ordering(dataset, 0)
-    # b = compute_ordering(dataset,1)
-    # print("feature 1 Ordering: ", a)
-    # print("feature 2 Ordering: ", b)
-
-    # Tetsing the clause builder
-    #print(len(features))
+ 
     cnf = build_clauses(literals, dataset, TB, TL, len(features), labels,true_labels_for_points)
 
     # Print out all clauses for verification
@@ -346,7 +354,7 @@ if __name__ == "__main__":
     #print(cnf.clauses)
 
     # Call the SAT solver and print the solution
-    solution = solve_cnf(cnf, literals, TL, tree, labels)
+    solution = solve_cnf(cnf, literals, TL, tree, labels,features,dataset)
     print("\nSAT Solver Output:")
     print(solution)
 
