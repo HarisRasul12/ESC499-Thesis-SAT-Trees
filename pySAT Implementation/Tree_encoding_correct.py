@@ -168,7 +168,7 @@ def build_clauses(literals, X, TB, TL, num_features, labels,true_labels):
         left_ancestors = get_ancestors(t, 'left')
         right_ancestors = get_ancestors(t, 'right')
         for i in range(len(X)):
-            # Data point i ends at leaf node t (Clause 5 and 6)
+            # Data point i ends at leaf node t (Clause 5 and 6) - assumption made!!!
             if left_ancestors:
                 cnf.append([-literals[f'z_{i}_{t}']] + [literals[f's_{i}_{a}'] for a in left_ancestors])
             if right_ancestors:
@@ -218,7 +218,7 @@ def build_clauses(literals, X, TB, TL, num_features, labels,true_labels):
     
     return cnf
 
-def set_branch_node_details(model, literals, tree_structure,features,dataset):
+def set_branch_node_features(model, literals, tree_structure,features,datasetX):
     """
     Set the chosen feature and threshold for each branching node in the tree structure
     based on the given SAT model.
@@ -232,6 +232,7 @@ def set_branch_node_details(model, literals, tree_structure,features,dataset):
     """
     # For each branching node, determine the chosen feature and threshold
     for node_index in range(len(tree_structure)):
+        #print(node_index)
         node = tree_structure[node_index]
         if node['type'] == 'branching':
             # Find which feature is used for splitting at the current node
@@ -246,23 +247,8 @@ def set_branch_node_details(model, literals, tree_structure,features,dataset):
                 # Set the chosen feature and computed threshold in the tree structure
                 node['feature'] = chosen_feature
 
-                # Sort the data points based on the chosen feature
-                sorted_data_points = sorted(enumerate(dataset), key=lambda x: x[1][int(chosen_feature)])
 
-                # Find the transition point where 's' literals change from true to false
-                split_index = None
-                for i, (index, _) in enumerate(sorted_data_points[:-1]):
-                    if literals[f's_{index}_{node_index}'] in model and literals[f's_{sorted_data_points[i + 1][0]}_{node_index}'] not in model:
-                        split_index = i
-                        break
-
-                if split_index is not None:
-                    # Compute the threshold as the average value between the two points around the split
-                    threshold_value = (sorted_data_points[split_index][1][int(chosen_feature)] + sorted_data_points[split_index + 1][1][int(chosen_feature)]) / 2
-                    node['threshold'] = threshold_value
-
-
-def solve_cnf(cnf, literals, TL, tree_structure, labels,features,dataset):
+def solve_cnf(cnf, literals, TL, tree_structure, labels,features,datasetX):
     """
     Attempts to solve the given CNF using a SAT solver.
 
@@ -289,11 +275,73 @@ def solve_cnf(cnf, literals, TL, tree_structure, labels,features,dataset):
                     tree_structure[t]['label'] = label
                     break
          # Set details for branching nodes
-        set_branch_node_details(model, literals, tree_structure,features,dataset)
+        set_branch_node_features(model, literals, tree_structure,features,datasetX)
         return model
     else:
         print("no solution!")
         return "No solution exists"
+
+
+def add_thresholds(tree_structure, literals, model_solution, dataset):
+    # Helper function to find the corresponding literal value in the model solution
+    def get_literal_value(literal):
+        return literals[literal] if literals[literal] in model_solution else -literals[literal]
+
+    # Recursive function to set the threshold for each branching node
+    def set_thresholds(node_index, dataset_indices):
+        node = tree_structure[node_index]
+        if node['type'] == 'branching':
+            feature_index = int(node['feature'])
+            feature_values = [dataset[i][feature_index] for i in dataset_indices]
+            
+            # Check if all feature values are the same
+            if len(set(feature_values)) == 1:
+                # If all feature values are the same, set the threshold to the common feature value
+                node['threshold'] = feature_values[0]
+            else:
+                # Sort dataset indices by the feature value
+                dataset_indices.sort(key=lambda i: dataset[i][feature_index])
+                # Find the split point
+                for i in range(1, len(dataset_indices)):
+                    left_index = dataset_indices[i - 1]
+                    right_index = dataset_indices[i]
+                    # Check if there's a change in direction between two consecutive data points
+                    if get_literal_value(f's_{left_index}_{node_index}') > 0 and get_literal_value(f's_{right_index}_{node_index}') < 0:
+                        # Threshold is the average value of the feature at the split point
+                        threshold = (dataset[left_index][feature_index] + dataset[right_index][feature_index]) / 2
+                        node['threshold'] = threshold
+                        break  # No need to check further once the split point is found
+            
+            # Continue for children nodes
+            left_child_index, right_child_index = node['children']
+            # Left dataset indices are those for which the literal is positive
+            left_dataset_indices = [i for i in dataset_indices if get_literal_value(f's_{i}_{node_index}') > 0]
+            # Right dataset indices are the rest
+            right_dataset_indices = [i for i in dataset_indices if i not in left_dataset_indices]
+            # Recursively set thresholds for children nodes
+            set_thresholds(left_child_index, left_dataset_indices)
+            set_thresholds(right_child_index, right_dataset_indices)
+
+    # Start from the root node with all dataset indices
+    set_thresholds(0, list(range(len(dataset))))
+    return tree_structure
+
+# Create a matrix for each type of variable
+def create_solution_matrix(literals, solution, var_type):
+    # Find the maximum index for this var_type
+    max_index = max(int(key.split('_')[1]) for key, value in literals.items() if key.startswith(var_type)) + 1
+    max_sub_index = max(int(key.split('_')[2]) for key, value in literals.items() if key.startswith(var_type)) + 1
+    
+    # Initialize the matrix with zeros
+    matrix = [[0 for _ in range(max_sub_index)] for _ in range(max_index)]
+    
+    # Fill in the matrix with 1 where the literals are true according to the solution
+    for key, value in literals.items():
+        if key.startswith(var_type):
+            index, sub_index = map(int, key.split('_')[1:])
+            matrix[index][sub_index] = 1 if value in solution else 0
+
+    return matrix
 
 def add_nodes(dot, tree, node_index=0):
     node = tree[node_index]
@@ -310,16 +358,17 @@ def visualize_tree(tree_structure):
     add_nodes(dot, tree_structure)
     return dot
 
-# Test the functions with the provided dataset under the main block
+
+# Test cases
 if __name__ == "__main__":
     # Define the test dataset parameters
     
-    # Test case 1 provided by pouya 
-    depth = 2
-    features = ['0', '1']
-    labels = [1,0]
-    true_labels_for_points = [1,0,0,0]
-    dataset = [(1,1), (3,3), (3,1), (1,3)]  # Dataset X
+    # Test case 1 provided by Pouya 
+    #depth = 2
+    #features = ['0', '1']
+    #labels = [1,0]
+    #true_labels_for_points = [1,0,0,0]
+    #dataset = [(1,1), (3,3), (3,1), (1,3)]  # Dataset X
 
 
     # Test case 2
@@ -328,6 +377,14 @@ if __name__ == "__main__":
     #labels = [0,1]
     #true_labels_for_points = [0,1]
     #dataset = [(1,1),(1,2)]
+
+    # Test case 3
+    depth = 2
+    features = ['0', '1']
+    labels = [1,2,3,4]
+    true_labels_for_points = [1,2,3,4]
+    dataset = [(1,1), (3,3), (3,1), (1,3)]  # Dataset X
+
 
 
     # Build the complete tree
@@ -338,7 +395,6 @@ if __name__ == "__main__":
     #print(literals)
 
 
-
     print("\nLiterals Created:")
     for literal, index in literals.items():
         print(f"{literal}: {index}")
@@ -347,11 +403,11 @@ if __name__ == "__main__":
     cnf = build_clauses(literals, dataset, TB, TL, len(features), labels,true_labels_for_points)
 
     # Print out all clauses for verification
-    print("\nClauses Created:")
-    for clause in cnf.clauses:
-        print(clause)
-    print("problem: ")
-    print(cnf.clauses)
+    #print("\nClauses Created:")
+    #for clause in cnf.clauses:
+    #    print(clause)
+    #print("problem: ")
+    #print(cnf.clauses)
 
     # Call the SAT solver and print the solution
     solution = solve_cnf(cnf, literals, TL, tree, labels,features,dataset)
@@ -359,12 +415,41 @@ if __name__ == "__main__":
     print(solution)
 
     # If a solution was found, print the updated tree structure
-    if solution != "No solution exists":
-        print("\nUpdated Tree Structure with Labels:")
-        for node in tree:
-            print(node)
-    print(tree)
+    #if solution != "No solution exists":
+    #    print("\nUpdated Tree Structure with Labels:")
+    #    for node in tree:
+    #        print(node)
+    #print(tree)
+    # now add the alpha_thresholds
+    #print(literals)
+
     
-    # Generate and visualize the tree
-    dot = visualize_tree(tree)
-    dot.render('binary_decision_tree', format='png', cleanup=True)
+    if solution != "No solution exists":
+        
+        # Generate and visualize the tree
+
+        tree_with_thresholds = add_thresholds(tree, literals, solution, dataset)
+        
+        #for node in tree_with_thresholds:
+        #    print(node)
+
+        dot = visualize_tree(tree_with_thresholds)
+        dot.render('binary_decision_tree', format='png', cleanup=True)
+
+        # create the matrix of each variable:
+
+        # Print out the matrix for each type of variable
+        print("\nSolution of Literals")
+        for var_type in ['a', 's', 'z', 'g']:
+            matrix = create_solution_matrix(literals, solution, var_type)
+            print(f"{var_type.upper()} Variables:")
+            for row in matrix:
+                print(' '.join(map(str, row)))
+            print("\n")
+
+    #print(literals)
+    #print(solution)
+
+
+
+
