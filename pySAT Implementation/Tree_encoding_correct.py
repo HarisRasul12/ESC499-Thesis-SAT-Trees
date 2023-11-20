@@ -315,19 +315,19 @@ if __name__ == "__main__":
     # Define the test dataset parameters
     
     # Test case 1 provided by pouya 
-    #depth = 2
-    #features = ['0', '1']
-    #labels = [1,2,3,4]
-    #true_labels_for_points = [1,2,3,4]
-    #dataset = [(1,1), (3,3), (3,1), (1,3)]  # Dataset X
+    depth = 2
+    features = ['0', '1']
+    labels = [1,0]
+    true_labels_for_points = [1,0,0,0]
+    dataset = [(1,1), (3,3), (3,1), (1,3)]  # Dataset X
 
 
     # Test case 2
-    depth = 1
-    features = ['0','1']
-    labels = [0,1]
-    true_labels_for_points = [0,1]
-    dataset = [(1,1),(1,2)]
+    #depth = 1
+    #features = ['0','1']
+    #labels = [0,1]
+    #true_labels_for_points = [0,1]
+    #dataset = [(1,1),(1,2)]
 
 
     # Build the complete tree
@@ -335,23 +335,23 @@ if __name__ == "__main__":
 
     # Create literals based on the tree structure and dataset
     literals = create_literals(TB, TL, features, labels, len(dataset))
-    print(literals)
+    #print(literals)
 
 
 
-    #print("\nLiterals Created:")
-    #for literal, index in literals.items():
-    #    print(f"{literal}: {index}")
+    print("\nLiterals Created:")
+    for literal, index in literals.items():
+        print(f"{literal}: {index}")
     
  
     cnf = build_clauses(literals, dataset, TB, TL, len(features), labels,true_labels_for_points)
 
     # Print out all clauses for verification
-    #print("\nClauses Created:")
-    #for clause in cnf.clauses:
-    #    print(clause)
-    #print("problem: ")
-    #print(cnf.clauses)
+    print("\nClauses Created:")
+    for clause in cnf.clauses:
+        print(clause)
+    print("problem: ")
+    print(cnf.clauses)
 
     # Call the SAT solver and print the solution
     solution = solve_cnf(cnf, literals, TL, tree, labels,features,dataset)
