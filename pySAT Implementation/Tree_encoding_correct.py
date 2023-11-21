@@ -476,19 +476,19 @@ if __name__ == "__main__":
 
     
     # Test case 1 provided by Pouya 
-    #features = ['0', '1']
-    #labels = [1,0]
-    #true_labels_for_points = [1,0,0,0]
-    #dataset = [(1,1), (3,3), (3,1), (1,3)]  # Dataset X
+    features = ['0', '1']
+    labels = [1,0]
+    true_labels_for_points = [1,0,0,0]
+    dataset = [(1,1), (3,3), (3,1), (1,3)]  # Dataset X
 
 
 
     
     # Test case 2
-    features = ['0','1']
-    labels = [0,1]
-    true_labels_for_points = [0,1]
-    dataset = [(1,1),(1,2)]
+    # features = ['0','1']
+    # labels = [0,1]
+    # true_labels_for_points = [0,1]
+    # dataset = [(1,1),(1,2)]
 
     
     # Test case 3
