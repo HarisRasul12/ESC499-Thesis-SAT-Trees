@@ -283,7 +283,21 @@ def solve_cnf(cnf, literals, TL, tree_structure, labels,features,datasetX):
 
 
 def add_thresholds(tree_structure, literals, model_solution, dataset):
-    # Helper function to find the corresponding literal value in the model solution
+    """
+    Attempts to get the threhold on every branch node from tree structure.
+
+    If a solution is found, it updates the tree structure with the correct labels for leaf nodes.
+
+    Args:
+    - tree structure (list): tree structure that has barnch node, feature, leaf node, and labels detail
+    - liteals (dict): mapping index of liteal # to variabel
+    - model_solution (list): CNF solution with lireal to map back to variables
+    - dataset (list): list of tupes of features form my dataset ecah datapoint is a tuple 
+
+
+    Returns:
+    - tree_structure: final solution that is correct with trhehodlds appended to ecah branch node of the trees 
+    """
     def get_literal_value(literal):
         return literals[literal] if literals[literal] in model_solution else -literals[literal]
 
@@ -343,6 +357,7 @@ def create_solution_matrix(literals, solution, var_type):
 
     return matrix
 
+# visualization code
 def add_nodes(dot, tree, node_index=0):
     node = tree[node_index]
     if node['type'] == 'branching':
@@ -353,10 +368,36 @@ def add_nodes(dot, tree, node_index=0):
     elif node['type'] == 'leaf':
         dot.node(str(node_index), label=f"LeafNode:\n{node_index}\nLabel: {node['label']}")
 
+#visualization code
 def visualize_tree(tree_structure):
     dot = Digraph()
     add_nodes(dot, tree_structure)
     return dot
+
+
+def find_min_depth_tree(features, labels, true_labels_for_points, dataset):
+    depth = 1  # Start with a depth of 1
+    solution = "No solution exists"
+    tree_with_thresholds = None
+    tree = None
+    literals = None
+
+    while solution == "No solution exists":
+        tree, TB, TL = build_complete_tree(depth)
+        literals = create_literals(TB, TL, features, labels, len(dataset))
+        cnf = build_clauses(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
+        solution = solve_cnf(cnf, literals, TL, tree, labels, features, dataset)
+        
+        if solution != "No solution exists":
+            tree_with_thresholds = add_thresholds(tree, literals, solution, dataset)
+            dot = visualize_tree(tree_with_thresholds)
+            dot.render(f'binary_decision_tree_depth_{depth}', format='png', cleanup=True)
+        else:
+            depth += 1  # Increase the depth and try again
+    
+    return tree_with_thresholds, literals, depth, solution
+
+
 
 
 # Test cases
@@ -379,76 +420,106 @@ if __name__ == "__main__":
     #dataset = [(1,1),(1,2)]
 
     # Test case 3
-    depth = 2
-    features = ['0', '1']
-    labels = [1,2,3,4]
-    true_labels_for_points = [1,2,3,4]
-    dataset = [(1,1), (3,3), (3,1), (1,3)]  # Dataset X
+    # depth = 2
+    # features = ['0', '1']
+    # labels = [1,2,3,4]
+    # true_labels_for_points = [1,2,3,4]
+    # dataset = [(1,1), (3,3), (3,1), (1,3)]  # Dataset X
 
+    # # Build the complete tree
+    # tree, TB, TL = build_complete_tree(depth)
 
-
-    # Build the complete tree
-    tree, TB, TL = build_complete_tree(depth)
-
-    # Create literals based on the tree structure and dataset
-    literals = create_literals(TB, TL, features, labels, len(dataset))
-    #print(literals)
-
-
-    print("\nLiterals Created:")
-    for literal, index in literals.items():
-        print(f"{literal}: {index}")
+    # # Create literals based on the tree structure and dataset
+    # literals = create_literals(TB, TL, features, labels, len(dataset))
+   
+    # print("\nLiterals Created:")
+    # for literal, index in literals.items():
+    #     print(f"{literal}: {index}")
     
  
-    cnf = build_clauses(literals, dataset, TB, TL, len(features), labels,true_labels_for_points)
+    # cnf = build_clauses(literals, dataset, TB, TL, len(features), labels,true_labels_for_points)
 
-    # Print out all clauses for verification
-    #print("\nClauses Created:")
-    #for clause in cnf.clauses:
-    #    print(clause)
-    #print("problem: ")
-    #print(cnf.clauses)
+    # # Print out all clauses for verification
+    # #print("\nClauses Created:")
+    # #for clause in cnf.clauses:
+    # #    print(clause)
+    # #print("problem: ")
+    # #print(cnf.clauses)
 
-    # Call the SAT solver and print the solution
-    solution = solve_cnf(cnf, literals, TL, tree, labels,features,dataset)
-    print("\nSAT Solver Output:")
-    print(solution)
+    # # Call the SAT solver and print the solution
+    # solution = solve_cnf(cnf, literals, TL, tree, labels,features,dataset)
+    # print("\nSAT Solver Output:")
+    # print(solution)
+    
+    # if solution != "No solution exists":
+        
+    #     # Generate and visualize the tree
 
-    # If a solution was found, print the updated tree structure
-    #if solution != "No solution exists":
-    #    print("\nUpdated Tree Structure with Labels:")
-    #    for node in tree:
-    #        print(node)
-    #print(tree)
-    # now add the alpha_thresholds
-    #print(literals)
+    #     tree_with_thresholds = add_thresholds(tree, literals, solution, dataset)
+        
+    #     #for node in tree_with_thresholds:
+    #     #    print(node)
+
+    #     dot = visualize_tree(tree_with_thresholds)
+    #     dot.render('binary_decision_tree', format='png', cleanup=True)
+
+    #     # create the matrix of each variable:
+
+    #     # Print out the matrix for each type of variable
+    #     print("\nSolution of Literals")
+    #     for var_type in ['a', 's', 'z', 'g']:
+    #         matrix = create_solution_matrix(literals, solution, var_type)
+    #         print(f"{var_type.upper()} Variables:")
+    #         for row in matrix:
+    #             print(' '.join(map(str, row)))
+    #         print("\n")
 
     
-    if solution != "No solution exists":
-        
-        # Generate and visualize the tree
+    # Test case 1 provided by Pouya 
+    #features = ['0', '1']
+    #labels = [1,0]
+    #true_labels_for_points = [1,0,0,0]
+    #dataset = [(1,1), (3,3), (3,1), (1,3)]  # Dataset X
 
-        tree_with_thresholds = add_thresholds(tree, literals, solution, dataset)
-        
-        #for node in tree_with_thresholds:
-        #    print(node)
 
-        dot = visualize_tree(tree_with_thresholds)
-        dot.render('binary_decision_tree', format='png', cleanup=True)
 
-        # create the matrix of each variable:
+    
+    # Test case 2
+    features = ['0','1']
+    labels = [0,1]
+    true_labels_for_points = [0,1]
+    dataset = [(1,1),(1,2)]
 
-        # Print out the matrix for each type of variable
-        print("\nSolution of Literals")
-        for var_type in ['a', 's', 'z', 'g']:
-            matrix = create_solution_matrix(literals, solution, var_type)
-            print(f"{var_type.upper()} Variables:")
-            for row in matrix:
-                print(' '.join(map(str, row)))
-            print("\n")
+    
+    # Test case 3
+    # features = ['0', '1']
+    # labels = [1,2,3,4]
+    # true_labels_for_points = [1,2,3,4]
+    # dataset = [(1,1), (3,3), (3,1), (1,3)]  # Dataset X
 
-    #print(literals)
-    #print(solution)
+
+    min_depth_tree, min_depth_literals, min_depth,solution = find_min_depth_tree(features, labels, true_labels_for_points, dataset)
+    print("Minimum Depth Tree Structure:")
+    for node in min_depth_tree:
+        print(node)
+    print(f"Found at depth: {min_depth}")
+    print("Literals at Minimum Depth:")
+    for literal, index in min_depth_literals.items():
+        print(f"{literal}: {index}")
+    
+    
+    print("\nSolution to SAT: ")
+    print(solution)
+    
+    # Print out the matrix for each type of variable
+    print("\nSolution of Literals")
+    for var_type in ['a', 's', 'z', 'g']:
+        matrix = create_solution_matrix(min_depth_literals, solution, var_type)
+        print(f"{var_type.upper()} Variables:")
+        for row in matrix:
+            print(' '.join(map(str, row)))
+        print("\n")
+
 
 
 
