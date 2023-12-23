@@ -1,11 +1,11 @@
 # Created by: Haris Rasul
-# Date: November 19th 2023
-# Python script to build the complete tree and create literals
-# for a given depth and dataset. This script will be structured to run the test when executed as the main program.
-
+# Date: December 22th 2023
+# Python script to build the complete min depth tree and create literals
+# This has a modeified dceoded threhold vs orginal paper - should test on test cacuracy later!!
 from pysat.formula import CNF
 from pysat.solvers import Solver
 from graphviz import Digraph
+import numpy as np
 
 # Define the function to build a complete tree of a given depth
 def build_complete_tree(depth):

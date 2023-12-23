@@ -6,6 +6,7 @@
 from pysat.formula import CNF
 from pysat.solvers import Solver
 from graphviz import Digraph
+import numpy as np
 
 # Define the function to build a complete tree of a given depth
 def build_complete_tree(depth):
@@ -476,13 +477,16 @@ if __name__ == "__main__":
 
     
     # Test case 1 provided by Pouya 
-    features = ['0', '1']
-    labels = [1,0]
-    true_labels_for_points = [1,0,0,0]
-    dataset = [(1,1), (3,3), (3,1), (1,3)]  # Dataset X
+    # features = ['0', '1']
+    # labels = [1,0]
+    # true_labels_for_points = [1,0,0,0]
+    # dataset = [(1,1), (3,3), (3,1), (1,3)]  # Dataset X
 
-
-
+    # Numpy implementations 
+    features = np.array(['0', '1'])
+    labels = np.array([1, 0])
+    true_labels_for_points = np.array([1, 0, 0, 0])
+    dataset = np.array([[1, 1], [3, 3], [3, 1], [1, 3]])  # Dataset X
     
     # Test case 2
     # features = ['0','1']
@@ -490,13 +494,23 @@ if __name__ == "__main__":
     # true_labels_for_points = [0,1]
     # dataset = [(1,1),(1,2)]
 
-    
+    # Numpy implementations 
+    # features = np.array(['0', '1'])
+    # labels = np.array([1, 0])
+    # true_labels_for_points = np.array([0, 1])
+    # dataset = np.array([[1, 1], [1,2]])  # Dataset X
+
     # Test case 3
     # features = ['0', '1']
     # labels = [1,2,3,4]
     # true_labels_for_points = [1,2,3,4]
     # dataset = [(1,1), (3,3), (3,1), (1,3)]  # Dataset X
 
+    # Numpy Implemnetations 
+    # features = np.array(['0', '1'])
+    # labels = np.array([1, 2, 3, 4])
+    # true_labels_for_points = np.array([1, 2, 3, 4])
+    # dataset = np.array([[1, 1], [3,3], [3,1], [1,3]])  # Dataset X
 
     min_depth_tree, min_depth_literals, min_depth,solution = find_min_depth_tree(features, labels, true_labels_for_points, dataset)
     print("Minimum Depth Tree Structure:")
