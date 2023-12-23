@@ -1,4 +1,0 @@
-// Decision Tree
-digraph {
-	1 [label="Leaf: 2"]
-}
