@@ -24,14 +24,14 @@
  - cost = number of correct label assignmnet literals pi's that are true (soft clauses)
  - solver = RC2
 
-4. utils.py - contains dataloader for excel,csv, and .txt file datasets
+3. utils.py - contains dataloader for excel,csv, and .txt file datasets
 
  - Has been scaled to allow for different types of parsing of fields within files
  - Allows specification of labels and features
  - Numerically encodes features and labels
  - TreeDataLoaderBinaryNumerical is a dataloader created to only handle numerical and binary data features
 
-5. DataReader.ipynb - allows for testing on different datasets
+4. DataReader.ipynb - allows for testing on different datasets
 
 
 # Datasets:
