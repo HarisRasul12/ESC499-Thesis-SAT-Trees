@@ -387,7 +387,7 @@ def find_min_depth_tree(features, labels, true_labels_for_points, dataset):
         if solution != "No solution exists":
             tree_with_thresholds = add_thresholds(tree, literals, solution, dataset)
             dot = visualize_tree(tree_with_thresholds)
-            dot.render(f'images/binary_decision_tree_depth_{depth}', format='png', cleanup=True)
+            dot.render(f'images/min_height/binary_decision_tree_min_depth_{depth}', format='png', cleanup=True)
         else:
             depth += 1  # Increase the depth and try again
     

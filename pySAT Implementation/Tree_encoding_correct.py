@@ -168,6 +168,9 @@ def build_clauses(literals, X, TB, TL, num_features, labels,true_labels):
     for t in TL:
         left_ancestors = get_ancestors(t, 'left')
         right_ancestors = get_ancestors(t, 'right')
+        # print('node: ', t)
+        # print('left ancestors: ',left_ancestors)
+        # print('right ancestors: ',right_ancestors)
         for i in range(len(X)):
             # Data point i ends at leaf node t (Clause 5 and 6) - assumption made!!!
             if left_ancestors:
@@ -283,62 +286,116 @@ def solve_cnf(cnf, literals, TL, tree_structure, labels,features,datasetX):
         return "No solution exists"
 
 
+# def add_thresholds(tree_structure, literals, model_solution, dataset):
+#     """
+#     Attempts to get the threhold on every branch node from tree structure.
+
+#     If a solution is found, it updates the tree structure with the correct labels for leaf nodes.
+
+#     Args:
+#     - tree structure (list): tree structure that has barnch node, feature, leaf node, and labels detail
+#     - liteals (dict): mapping index of liteal # to variabel
+#     - model_solution (list): CNF solution with lireal to map back to variables
+#     - dataset (list): list of tupes of features form my dataset ecah datapoint is a tuple 
+
+
+#     Returns:
+#     - tree_structure: final solution that is correct with trhehodlds appended to ecah branch node of the trees 
+#     """
+#     def get_literal_value(literal):
+#         return literals[literal] if literals[literal] in model_solution else -literals[literal]
+
+#     # Recursive function to set the threshold for each branching node
+#     def set_thresholds(node_index, dataset_indices):
+#         node = tree_structure[node_index]
+#         if node['type'] == 'branching':
+#             feature_index = int(node['feature'])
+#             feature_values = [dataset[i][feature_index] for i in dataset_indices]
+            
+#             # Check if all feature values are the same
+#             if len(set(feature_values)) == 1:
+#                 # If all feature values are the same, set the threshold to the common feature value
+#                 node['threshold'] = feature_values[0]
+#             else:
+#                 # Sort dataset indices by the feature value
+#                 dataset_indices.sort(key=lambda i: dataset[i][feature_index])
+#                 # Find the split point
+#                 for i in range(1, len(dataset_indices)):
+#                     left_index = dataset_indices[i - 1]
+#                     right_index = dataset_indices[i]
+#                     # Check if there's a change in direction between two consecutive data points
+#                     if get_literal_value(f's_{left_index}_{node_index}') > 0 and get_literal_value(f's_{right_index}_{node_index}') < 0:
+#                         # Threshold is the average value of the feature at the split point
+#                         threshold = (dataset[left_index][feature_index] + dataset[right_index][feature_index]) / 2
+#                         node['threshold'] = threshold
+#                         break  # No need to check further once the split point is found
+            
+#             # Continue for children nodes
+#             left_child_index, right_child_index = node['children']
+#             # Left dataset indices are those for which the literal is positive
+#             left_dataset_indices = [i for i in dataset_indices if get_literal_value(f's_{i}_{node_index}') > 0]
+#             # Right dataset indices are the rest
+#             right_dataset_indices = [i for i in dataset_indices if i not in left_dataset_indices]
+#             # Recursively set thresholds for children nodes
+#             set_thresholds(left_child_index, left_dataset_indices)
+#             set_thresholds(right_child_index, right_dataset_indices)
+
+#     # Start from the root node with all dataset indices
+#     set_thresholds(0, list(range(len(dataset))))
+#     return tree_structure
+
+#adjusted Logic to compute threshold on the entire dataset at each feature node branch 
 def add_thresholds(tree_structure, literals, model_solution, dataset):
     """
-    Attempts to get the threhold on every branch node from tree structure.
-
-    If a solution is found, it updates the tree structure with the correct labels for leaf nodes.
+    Compute the threshold for each branching node in the tree structure
+    based on the entire dataset.
 
     Args:
-    - tree structure (list): tree structure that has barnch node, feature, leaf node, and labels detail
-    - liteals (dict): mapping index of liteal # to variabel
-    - model_solution (list): CNF solution with lireal to map back to variables
-    - dataset (list): list of tupes of features form my dataset ecah datapoint is a tuple 
-
+    - tree_structure (list): The binary tree structure containing nodes.
+    - literals (dict): The mapping of literals to variable indices.
+    - model_solution (list): The model solution from the SAT solver.
+    - dataset (np.array): The dataset containing all the data points.
 
     Returns:
-    - tree_structure: final solution that is correct with trhehodlds appended to ecah branch node of the trees 
+    - tree_structure (list): The updated tree structure with thresholds set for branching nodes.
     """
     def get_literal_value(literal):
+        # Helper function to get the value of a literal from the model solution.
         return literals[literal] if literals[literal] in model_solution else -literals[literal]
 
-    # Recursive function to set the threshold for each branching node
-    def set_thresholds(node_index, dataset_indices):
+    def set_thresholds(node_index, dataset):
         node = tree_structure[node_index]
         if node['type'] == 'branching':
             feature_index = int(node['feature'])
-            feature_values = [dataset[i][feature_index] for i in dataset_indices]
-            
-            # Check if all feature values are the same
-            if len(set(feature_values)) == 1:
-                # If all feature values are the same, set the threshold to the common feature value
-                node['threshold'] = feature_values[0]
-            else:
-                # Sort dataset indices by the feature value
-                dataset_indices.sort(key=lambda i: dataset[i][feature_index])
-                # Find the split point
-                for i in range(1, len(dataset_indices)):
-                    left_index = dataset_indices[i - 1]
-                    right_index = dataset_indices[i]
-                    # Check if there's a change in direction between two consecutive data points
-                    if get_literal_value(f's_{left_index}_{node_index}') > 0 and get_literal_value(f's_{right_index}_{node_index}') < 0:
-                        # Threshold is the average value of the feature at the split point
-                        threshold = (dataset[left_index][feature_index] + dataset[right_index][feature_index]) / 2
-                        node['threshold'] = threshold
-                        break  # No need to check further once the split point is found
+
+            # Instead of using the dataset_indices, we will compute the threshold based on the entire dataset.
+            feature_values = dataset[:, feature_index]
+            sorted_indices = np.argsort(feature_values)
+
+            # Initialize the threshold
+            threshold = None
+
+            # Find the first instance where the direction changes and set the threshold.
+            for i in range(1, len(sorted_indices)):
+                left_index = sorted_indices[i - 1]
+                right_index = sorted_indices[i]
+                if get_literal_value(f's_{left_index}_{node_index}') > 0 and get_literal_value(f's_{right_index}_{node_index}') < 0:
+                    threshold = (feature_values[left_index] + feature_values[right_index]) / 2
+                    break
+
+            # If no change in direction is found, threshold remains None.
+            node['threshold'] = threshold
             
             # Continue for children nodes
-            left_child_index, right_child_index = node['children']
-            # Left dataset indices are those for which the literal is positive
-            left_dataset_indices = [i for i in dataset_indices if get_literal_value(f's_{i}_{node_index}') > 0]
-            # Right dataset indices are the rest
-            right_dataset_indices = [i for i in dataset_indices if i not in left_dataset_indices]
-            # Recursively set thresholds for children nodes
-            set_thresholds(left_child_index, left_dataset_indices)
-            set_thresholds(right_child_index, right_dataset_indices)
+            left_child_index, right_child_index = node['children'][0], node['children'][1]
+            if left_child_index < len(tree_structure): # Check index is within bounds
+                set_thresholds(left_child_index, dataset)
+            if right_child_index < len(tree_structure): # Check index is within bounds
+                set_thresholds(right_child_index, dataset)
 
-    # Start from the root node with all dataset indices
-    set_thresholds(0, list(range(len(dataset))))
+    # Apply the threshold setting function starting from the root node
+    set_thresholds(0, dataset)
+
     return tree_structure
 
 # Create a matrix for each type of variable
