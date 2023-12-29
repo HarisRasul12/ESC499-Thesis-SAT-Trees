@@ -285,7 +285,7 @@ def solve_cnf(cnf, literals, TL, tree_structure, labels,features,datasetX):
         #print("no solution!")
         return "No solution exists"
 
-
+# My original logic proposal
 # def add_thresholds(tree_structure, literals, model_solution, dataset):
 #     """
 #     Attempts to get the threhold on every branch node from tree structure.
