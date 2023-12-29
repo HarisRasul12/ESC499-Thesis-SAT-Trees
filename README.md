@@ -33,6 +33,10 @@
 
 4. DataReader.ipynb - allows for testing on different datasets
 
+Please note that categorical feature tree modules have bene created for the min height and max accuarcy optimization problems for datasets that have combination of numerical, binary, and categorical features. Seen in the followin files: 
+
+5. min_height_tree_categorical_module.py
+6. fixed_height_tree_categorical_module.py 
 
 # Datasets:
 Datasets can be accessed via this link: https://archive.ics.uci.edu
