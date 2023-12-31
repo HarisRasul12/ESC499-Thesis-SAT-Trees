@@ -71,13 +71,14 @@ def build_clauses_categorical(literals, X, TB, TL, num_features, features_catego
                         # Clause (18) combination 
                         cnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i_index}_{t}'], -literals[f's_{ip_index}_{t}']]) 
                 else:
-                    # Clause (16) for numerical features
+                    # Clause (16) and (17) for numerical features
                     # Use float conversion for numerical feature comparison   
                     if float(X[i_index, j]) < float(X[ip_index, j]):
-                        cnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i_index}_{t}'], -literals[f's_{ip_index}_{t}']])
-                    # Clause (17) checks if the values are the same
-                    elif float(X[i_index, j]) == float(X[ip_index, j]):
-                        cnf.append([-literals[f'a_{t}_{j}'], -literals[f's_{i_index}_{t}'], literals[f's_{ip_index}_{t}']])
+                        cnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i_index}_{t}'], -literals[f's_{ip_index}_{t}']]) #(16)
+                    # Clause (17) and (16) added whem checks for the values are the same
+                    if float(X[i_index, j]) == float(X[ip_index, j]):
+                        cnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i_index}_{t}'], -literals[f's_{ip_index}_{t}']]) #(16)
+                        cnf.append([-literals[f'a_{t}_{j}'], -literals[f's_{i_index}_{t}'], literals[f's_{ip_index}_{t}']]) #(17)
     
     # Clause (19 and 20): Path valididty form right traversla and left traversal 
     for t in TL:
@@ -192,7 +193,7 @@ def find_min_depth_tree_categorical(features, features_categorical, features_num
             dot = visualize_tree(tree_with_thresholds)
             dot.render(f'images/min_height/binary_decision_tree_min_depth_with_categorical_features_depth_{depth}', format='png', cleanup=True)
         else:
-            # print("No solution at depth: ", depth)
+            print("No solution at depth: ", depth)
             depth += 1  # Increase the depth and try again
     
     return tree_with_thresholds, literals, depth, solution

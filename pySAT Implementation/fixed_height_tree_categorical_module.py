@@ -57,13 +57,14 @@ def build_clauses_categorical_fixed(literals, X, TB, TL, num_features, features_
                         # Clause (18) combination 
                         wcnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i_index}_{t}'], -literals[f's_{ip_index}_{t}']]) 
                 else:
-                    # Clause (16) for numerical features
-                    # Use float conversion for numerical feature comparison   
+                    # Clause (16) and (17) for numerical features
+                    # Use float conversion for numerical feature comparison 
                     if float(X[i_index, j]) < float(X[ip_index, j]):
-                        wcnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i_index}_{t}'], -literals[f's_{ip_index}_{t}']])
-                    # Clause (17) checks if the values are the same
-                    elif float(X[i_index, j]) == float(X[ip_index, j]):
-                        wcnf.append([-literals[f'a_{t}_{j}'], -literals[f's_{i_index}_{t}'], literals[f's_{ip_index}_{t}']])
+                        wcnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i_index}_{t}'], -literals[f's_{ip_index}_{t}']]) #(16)
+                    # Clause (17) and (16) added whem checks for the values are the same
+                    if float(X[i_index, j]) == float(X[ip_index, j]):
+                        wcnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i_index}_{t}'], -literals[f's_{ip_index}_{t}']]) #(16)
+                        wcnf.append([-literals[f'a_{t}_{j}'], -literals[f's_{i_index}_{t}'], literals[f's_{ip_index}_{t}']]) #(17)
     
     # Clause (19 and 20): Path valididty form right traversla and left traversal 
     for t in TL:
@@ -147,7 +148,7 @@ def find_fixed_depth_tree_categorical(features, features_categorical, features_n
 
 # if __name__ == "__main__":
 #     # Define the test dataset parameters
-    
+
 #     # Numpy implementations 
 #     depth = 2
 #     features = np.array(['0', '1'])
@@ -159,5 +160,10 @@ def find_fixed_depth_tree_categorical(features, features_categorical, features_n
 
 #     tree_with_thresholds, literals, depth, solution, cost = find_fixed_depth_tree_categorical(features, features_categorical, features_numerical, labels, true_labels_for_points, dataset, depth)
 #     print("The cost of the solution is: ", cost)
+#     print(literals)
+#     print(solution)
+#     print(tree_with_thresholds)
+
+#     print(compute_ordering_with_categorical(dataset,0,features_categorical))
 
 

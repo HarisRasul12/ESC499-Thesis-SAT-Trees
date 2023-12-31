@@ -6,7 +6,7 @@ from pysat.formula import CNF
 from pysat.solvers import Solver
 from graphviz import Digraph
 import numpy as np
-from min_height_tree_module import get_ancestors, build_complete_tree, create_literals, solve_cnf,visualize_tree
+from min_height_tree_module import get_ancestors, build_complete_tree, create_literals, solve_cnf,visualize_tree, create_solution_matrix
 
 # Helper function to sort data points by feature and create O_j FOR CATGEORICAL 
 def compute_ordering_with_categorical(X, feature_index, features_categorical):
@@ -71,13 +71,14 @@ def build_clauses_categorical(literals, X, TB, TL, num_features, features_catego
                         # Clause (18) combination 
                         cnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i_index}_{t}'], -literals[f's_{ip_index}_{t}']]) 
                 else:
-                    # Clause (16) for numerical features
+                    # Clause (16) and (17) for numerical features
                     # Use float conversion for numerical feature comparison   
                     if float(X[i_index, j]) < float(X[ip_index, j]):
-                        cnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i_index}_{t}'], -literals[f's_{ip_index}_{t}']])
-                    # Clause (17) checks if the values are the same
-                    elif float(X[i_index, j]) == float(X[ip_index, j]):
-                        cnf.append([-literals[f'a_{t}_{j}'], -literals[f's_{i_index}_{t}'], literals[f's_{ip_index}_{t}']])
+                        cnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i_index}_{t}'], -literals[f's_{ip_index}_{t}']]) #(16)
+                    # Clause (17) and (16) added whem checks for the values are the same
+                    if float(X[i_index, j]) == float(X[ip_index, j]):
+                        cnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i_index}_{t}'], -literals[f's_{ip_index}_{t}']]) #(16)
+                        cnf.append([-literals[f'a_{t}_{j}'], -literals[f's_{i_index}_{t}'], literals[f's_{ip_index}_{t}']]) #(17)
     
     # Clause (19 and 20): Path valididty form right traversla and left traversal 
     for t in TL:
@@ -201,18 +202,57 @@ def find_min_depth_tree_categorical(features, features_categorical, features_num
 if __name__ == "__main__":
     # Define the test dataset parameters
     
-    # Numpy implementations 
+    # # Numpy implementations 
+    # features = np.array(['0', '1'])
+    # features_categorical = np.array(['0']) #FC
+    # features_numerical = np.array(['1']) #FN
+    # labels = np.array([1, 0])
+    # true_labels_for_points = np.array([1, 1, 0, 1, 0, 0, 0])
+    # dataset = np.array([['A', 0], ['B', 3], ['C', 2], ['A', 1], ['A', 2], ['C', 0], ['C', 3]])  # Dataset X
+
+    # features = np.array(['0', '1'])
+    # features_categorical = np.array(['0','1']) #FC
+    # features_numerical = np.array([]) #FN
+    # labels = np.array([1, 2, 3, 4])
+    # true_labels_for_points = np.array([1, 2, 3, 4])
+    # dataset = np.array([['A', 0], ['A', 1], ['B', 0], ['B', 1]])  # Dataset X
+
+    # features = np.array(['0', '1'])
+    # features_categorical = np.array(['0']) #FC
+    # features_numerical = np.array(['1']) #FN
+    # labels = np.array([1, 2, 3, 4, 5, 6])
+    # true_labels_for_points = np.array([1, 2, 3, 3, 4, 5, 6])
+    # dataset = np.array([['A', 0], ['A', 1], ['A', 2], ['A', 3],['B', 5], ['B', 6], ['B', 7]])  # Dataset X
+
     features = np.array(['0', '1'])
     features_categorical = np.array(['0']) #FC
     features_numerical = np.array(['1']) #FN
     labels = np.array([1, 0])
-    true_labels_for_points = np.array([1, 1, 0, 1, 0, 0, 0])
-    dataset = np.array([['A', 0], ['B', 3], ['C', 2], ['A', 1], ['A', 2], ['C', 0], ['C', 3]])  # Dataset X
+    true_labels_for_points = np.array([1, 0, 1, 0, 0, 1, 1, 0])
+    dataset = np.array([['T', 0.5], ['T', 1.5], ['F', 0.5], ['F', 2.5], ['T', 2.5], ['F', 1.5], ['T', 3.5], ['F', 3.5]])  # Dataset X
 
     min_depth_tree, min_depth_literals, min_depth,solution = find_min_depth_tree_categorical(features, features_categorical, features_numerical, labels, true_labels_for_points, dataset)
-    print("Minimum Depth Tree Structure:")
-    for node in min_depth_tree:
-        print(node)
     print(f"Found at depth: {min_depth}")
 
 
+    print("\nSolution of Literals")
+    print(solution)
+    print("Literals at Minimum Depth:")
+    for literal, index in min_depth_literals.items():
+        print(f"{literal}: {index}")
+
+    for var_type in ['a', 's', 'z', 'g']:
+        matrix = create_solution_matrix(min_depth_literals, solution, var_type)
+        print(f"{var_type.upper()} Variables:")
+        for row in matrix:
+            print(' '.join(map(str, row)))
+        print("\n")
+
+    print(compute_ordering_with_categorical(dataset,1,features_categorical))
+
+    depth = 2
+    tree, TB, TL = build_complete_tree(depth)
+    literals = create_literals(TB, TL, features, labels, len(dataset))
+    cnf = build_clauses_categorical(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels, true_labels_for_points)
+    for clause in cnf.clauses:
+        print(clause)

@@ -107,3 +107,30 @@ class TreeDataLoaderBinaryNumerical:
         self.dataset = features_array
         self.features = np.array([str(i) for i in range(self.dataset.shape[1])])
         self.labels = np.unique(self.true_labels_for_points)
+
+class TreeDataLoaderWithCategorical:
+    """
+    A class to represent a dataset with labeled data for numerical, binary data, and catgeroical data
+
+    Attributes:
+        file_path (str): The path to the dataset file.
+        delimiter (str): The delimiter used in the dataset file to separate columns.
+        label_position (int): The index of the column containing the labels. By default, it is set to -1, assuming the label is in the last column.
+        features (np.ndarray): The names of the features, encoded as strings representing their column index.
+        labels (np.ndarray): The unique labels present in the dataset after processing.
+        true_labels_for_points (np.ndarray): The array containing the labels for each data point after processing.
+        dataset (np.ndarray): The array containing the features for each data point.
+
+    Methods:
+        process_data_into_tree_form(): Reads the dataset from the file path, processes it, and populates the attributes with the processed data.
+
+    Usage:
+        # To create an instance of the class:
+        my_dataset = TreeDataLoaderMinHeightBinaryNumerical('path/to/your/datafile.csv', delimiter=',', label_position=-1)
+
+        # Access the processed data:
+        my_dataset.features
+        my_dataset.labels
+        my_dataset.true_labels_for_points
+        my_dataset.dataset
+    """
