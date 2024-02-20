@@ -9,7 +9,16 @@
 5. openpxyl
 6. pandas
 
-# Code Description:
+# SATreeCraft 
+
+SATreeCraft is a Python Library designed to solve classification problems using SAT-based encodings of decision trees to produce excat optimal solutions. It supports datasets with categorical and/or numerical features and can optimize for minimum tree height or maximum accuracy given a fixed depth. It also supports clusteirng tree objectives such as maximizing minimum split and minimizing maximum diameter
+
+Currently Supports:
+- Classifcation Objectives: Min height, Max accuracy
+- Clustering Objectives:
+- External SAT solver support is offered 
+
+# Submodule Code Description:
 
 1. min_height_tree_module.py - this contains the SAT min-height tree problem model proposed in P. Shati, E. Cohen, and S. McIlraith, “Optimal decision trees for interpretable clustering with constraints,” Proceedings of the Thirty-Second International Joint Conference on Artificial Intelligence, 2023. doi:10.24963/ijcai.2023/225
 
