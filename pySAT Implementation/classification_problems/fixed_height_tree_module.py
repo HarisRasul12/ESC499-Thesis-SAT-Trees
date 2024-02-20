@@ -10,7 +10,7 @@ from pysat.formula import WCNF
 from pysat.examples.rc2 import RC2
 from graphviz import Digraph
 import numpy as np
-from min_height_tree_module import *
+from classification_problems.min_height_tree_module import *
 
 # Define the function to create literals based on the tree structure
 def create_literals_fixed_tree(TB, TL, F, C, dataset_size):

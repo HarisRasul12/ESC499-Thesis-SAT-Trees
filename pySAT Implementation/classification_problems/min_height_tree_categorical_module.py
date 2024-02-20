@@ -6,7 +6,7 @@ from pysat.formula import CNF
 from pysat.solvers import Solver
 from graphviz import Digraph
 import numpy as np
-from min_height_tree_module import get_ancestors, build_complete_tree, create_literals, solve_cnf, visualize_tree
+from classification_problems.min_height_tree_module import get_ancestors, build_complete_tree, create_literals, solve_cnf, visualize_tree
 
 # Helper function to sort data points by feature and create O_j FOR CATGEORICAL 
 def compute_ordering_with_categorical(X, feature_index, features_categorical):
@@ -138,7 +138,7 @@ def add_thresholds_categorical(tree_structure, literals, model_solution, dataset
     def get_literal_value(literal):
         return literals[literal] if literals[literal] in model_solution else -literals[literal]
 
-    def set_thresholds(node_index, dataset):
+    def set_thresholds_categorical(node_index, dataset):
         node = tree_structure[node_index]
         if node['type'] == 'branching':
             feature_index = int(node['feature'])
@@ -167,12 +167,12 @@ def add_thresholds_categorical(tree_structure, literals, model_solution, dataset
             # Continue for children nodes
             left_child_index, right_child_index = node['children'][0], node['children'][1]
             if left_child_index < len(tree_structure):
-                set_thresholds(left_child_index, dataset)
+                set_thresholds_categorical(left_child_index, dataset)
             if right_child_index < len(tree_structure):
-                set_thresholds(right_child_index, dataset)
+                set_thresholds_categorical(right_child_index, dataset)
 
     # Apply the threshold setting function starting from the root node
-    set_thresholds(0, dataset)
+    set_thresholds_categorical(0, dataset)
     return tree_structure
 
 def find_min_depth_tree_categorical(features, features_categorical, features_numerical, labels, true_labels_for_points, dataset):

@@ -8,8 +8,8 @@ from pysat.formula import WCNF
 from pysat.examples.rc2 import RC2
 from graphviz import Digraph
 import numpy as np
-from min_height_tree_categorical_module import *
-from fixed_height_tree_module import create_literals_fixed_tree, solve_wcnf
+from classification_problems.min_height_tree_categorical_module import *
+from classification_problems.fixed_height_tree_module import create_literals_fixed_tree, solve_wcnf
 
 
 def build_clauses_categorical_fixed(literals, X, TB, TL, num_features, features_categorical, features_numerical, labels,true_labels):
