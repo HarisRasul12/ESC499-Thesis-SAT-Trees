@@ -12,10 +12,7 @@ from classification_problems.fixed_height_tree_module import *
 from classification_problems.min_height_tree_categorical_module import *
 from classification_problems.fixed_height_tree_categorical_module import *
 
-# from min_height_tree_module import *
-# from min_height_tree_categorical_module import *
-# from fixed_height_tree_module import *
-# from fixed_height_tree_categorical_module import *
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
 class SATreeCraft:
     """
