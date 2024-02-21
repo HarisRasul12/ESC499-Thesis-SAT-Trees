@@ -1,5 +1,7 @@
 # ESC499-Thesis-SAT-Trees
 
+This contains the Python library for the Engineering Science Thesis by Haris Rasul 2023-2024
+
 # Depedancies:
 
 1. pySAT
@@ -11,12 +13,33 @@
 
 # SATreeCraft 
 
-SATreeCraft is a Python Library designed to solve classification problems using SAT-based encodings of decision trees to produce excat optimal solutions. It supports datasets with categorical and/or numerical features and can optimize for minimum tree height or maximum accuracy given a fixed depth. It also supports clusteirng tree objectives such as maximizing minimum split and minimizing maximum diameter
+SATreeCraft is a Python Library designed to solve classification problems using SAT-based encodings of decision trees to produce excat optimal solutions. It supports datasets with categorical and/or numerical features and can optimize for minimum tree height or maximum accuracy given a fixed depth. It also supports clustering tree objectives such as maximizing minimum split and minimizing maximum diameter
 
 Currently Supports:
 - Classifcation Objectives: Min height, Max accuracy
 - Clustering Objectives:
 - External SAT solver support is offered 
+
+
+# Main Modules
+
+1. SATreeCraft.py
+ - Contans the SAT Encoding tree builder class that creates model ,finds the optimal objective value
+ - allows user to specify problem type, tree structure type, optimization objecive
+ - can export CNF to external solver
+
+2. SATreeClassifier.py
+ - Contains tree classifcation predictor function given built model from SATreeCraft()
+ - contains sklearn pipeline and metrics for model evalauation 
+
+
+3. utils.py - contains dataloader for excel,csv, and .txt file datasets
+
+ - Has been scaled to allow for different types of parsing of fields within files
+ - Allows specification of labels and features
+ - Numerically encodes features and labels
+ - TreeDataLoaderBinaryNumerical is a dataloader created to only handle numerical and binary data features with excel and csv load in capabilities
+ - TreeDataLoaderWithCategorical handles categorcal features, numerical, and binary only txt files 
 
 # Submodule Code Description:
 
@@ -33,20 +56,12 @@ Currently Supports:
  - cost = number of correct label assignmnet literals pi's that are true (soft clauses)
  - solver = RC2
 
-3. utils.py - contains dataloader for excel,csv, and .txt file datasets
-
- - Has been scaled to allow for different types of parsing of fields within files
- - Allows specification of labels and features
- - Numerically encodes features and labels
- - TreeDataLoaderBinaryNumerical is a dataloader created to only handle numerical and binary data features with excel and csv load in capabilities
- - TreeDataLoaderWithCategorical handles categorcal features, numerical, and binary only txt files 
-
-4. DataReader.ipynb - allows for testing on different datasets
+3. DataReader.ipynb - allows for testing on different datasets
 
 Please note that categorical feature tree modules have bene created for the min height and max accuarcy optimization problems for datasets that have combination of numerical, binary, and categorical features. Seen in the followin files: 
 
-5. min_height_tree_categorical_module.py
-6. fixed_height_tree_categorical_module.py 
+4. min_height_tree_categorical_module.py - min height tree problem with categorical dataset
+5. fixed_height_tree_categorical_module.py - fixed height max accuarcy with categorical dataset
 
 # Datasets:
 Datasets can be accessed via this link: https://archive.ics.uci.edu
