@@ -193,13 +193,44 @@ class SATreeCraft:
                                                                                                                self.true_labels_for_points, 
                                                                                                                self.dataset,
                                                                                                                self.fixed_depth)
-    def export_cnf(self):
+    def export_cnf(self, filename='dimacs/export_to_solver.cnf'):
         """
         Exports the final CNF formula to a file in DIMACS format. This allows for the use
         of the CNF with external solvers. The export is only available after solving the CNF. 
         Supports both weighted and non weighted cnf. 
         """
-        self.final_cnf.to_file('dimacs/export_to_solver.cnf')
+        if self.final_cnf:
+            self.final_cnf.to_file(filename)
+        else:
+            raise ValueError("Cannot export CNF. The final CNF is not available. Make sure to solve the problem first.")
 
 
- 
+    
+    def export_cnf_max_accuracy_problem(self, filename='dimacs/export_to_solver_max_acc_problem.cnf'):
+        """
+        Exports the final CNF formula to a file in DIMACS format. This allows for the use
+        of the CNF with external solvers. The export is only available after solving the CNF. 
+        Supports both weighted and non weighted cnf. 
+        """
+        if self.is_classification: # classifciation problem domain
+                if self.classifciation_objective != 'min_height': # minimum height 100% accuracy on training problem
+                    
+                    tree_with_thresholds = None
+                    tree = None
+                    literals = None
+                    cost = None
+                    tree, TB, TL = build_complete_tree(self.fixed_depth)
+                    literals = create_literals_fixed_tree(TB, TL, self.features, self.labels, len(self.dataset))
+                    
+                    if self.features_categorical is not None and len(self.features_categorical) > 0: # categorical feature dataset
+                        wcnf = build_clauses_categorical_fixed(literals, self.dataset, TB, TL, len(self.features), 
+                                                            self.features_categorical, self.features_numerical, 
+                                                            self.labels,self.true_labels_for_points)
+                    else:
+                        wcnf = build_clauses_fixed_tree(literals, self.dataset, TB, TL, len(self.features), self.labels, self.true_labels_for_points)
+                    
+                    wcnf.to_file(filename)
+                else:
+                    ("Cannot export CNF without solving for min height problem first.")
+        else:
+            raise ValueError("Cannot export CNF. The final CNF is not available. Make sure to solve the problem first.")
