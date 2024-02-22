@@ -209,8 +209,7 @@ class SATreeCraft:
     def export_cnf_max_accuracy_problem(self, filename='dimacs/export_to_solver_max_acc_problem.cnf'):
         """
         Exports the final CNF formula to a file in DIMACS format. This allows for the use
-        of the CNF with external solvers. The export is only available after solving the CNF. 
-        Supports both weighted and non weighted cnf. 
+        of the CNF with external solvers. Export before solving max accuracy problem.
         """
         if self.is_classification: # classifciation problem domain
                 if self.classifciation_objective != 'min_height': # minimum height 100% accuracy on training problem
@@ -234,3 +233,73 @@ class SATreeCraft:
                     ("Cannot export CNF without solving for min height problem first.")
         else:
             raise ValueError("Cannot export CNF. The final CNF is not available. Make sure to solve the problem first.")
+    
+    def export_cnf_min_height_k(self,depth,filename = 'dimacs/export_to_solver_min_height_problem_at_given_depth.cnf'):
+        """
+        Exports the CNF formula at a given depth k to a file in DIMACS format. 
+        This allows for External solver support of the CNF problem.
+        """
+        if self.is_classification: # classifciation problem domain
+                if self.classifciation_objective == 'min_height': # minimum height 100% accuracy on training problem
+                    solution = "No solution exists"
+                    tree_with_thresholds = None
+                    tree = None
+                    literals = None
+                    tree, TB, TL = build_complete_tree(depth)
+                    literals = create_literals(TB, TL, self.features, self.labels, len(self.dataset))
+
+                    if self.features_categorical is not None and len(self.features_categorical) > 0: # categorical feature dataset
+                        cnf = build_clauses_categorical(literals, 
+                                                        self.dataset, TB, TL, len(self.features), 
+                                                        self.features_categorical, self.features_numerical, self.labels, self.true_labels_for_points)
+                    else:
+                        cnf = build_clauses(literals, self.dataset, TB, TL, len(self.features), self.labels, self.true_labels_for_points)
+                    cnf.to_file(filename)
+                else:
+                    ("Must be a min height objective")
+        else:
+            ("Cannot export CNF ")
+    
+    
+    def create_solution_matrix(self, literals, solution, var_type):
+        # Find the maximum index for this var_type
+        max_index = max(int(key.split('_')[1]) for key, value in literals.items() if key.startswith(var_type)) + 1
+        max_sub_index = max(int(key.split('_')[2]) for key, value in literals.items() if key.startswith(var_type)) + 1
+        
+        # Initialize the matrix with zeros
+        matrix = [[0 for _ in range(max_sub_index)] for _ in range(max_index)]
+        
+        # Fill in the matrix with 1 where the literals are true according to the solution
+        for key, value in literals.items():
+            if key.startswith(var_type):
+                index, sub_index = map(int, key.split('_')[1:])
+                matrix[index][sub_index] = 1 if value in solution else 0
+
+        return matrix
+    
+    
+    def display_solution(self):
+        '''
+        Display solved solution of porblem in readble format of literals
+        '''
+        print("\nSolution of Literals")
+        
+        if self.classifciation_objective == 'min_height':
+            var_types = ['a', 's', 'z', 'g']
+        else:
+            var_types = ['a', 's', 'z', 'g','p']
+        for var_type in var_types:
+            if var_type != 'p':
+                matrix = create_solution_matrix(self.final_literals, self.sat_solution, var_type)
+                print(f"{var_type.upper()} Variables:")
+                for row in matrix:
+                    print(' '.join(map(str, row)))
+                print("\n")
+            elif var_type == 'p' and self.classifciation_objective != 'min_height':
+                # finish the p_literals 
+                print("P Variables:")
+                for p_literal, value in self.final_literals.items():
+                    if p_literal.startswith('p_'):
+                        # Convert positive values to 1 and negative to 0
+                        clue = 1 if value > 0 else 0
+                        print(f"{p_literal}: {clue}")
