@@ -39,7 +39,7 @@ class SATreeCraft:
     """
 
     def __init__(self, dataset,features,labels, true_labels_for_points, features_numerical = None, features_categorical = None,
-                 is_classification = True, classifciation_objective = 'min_height', fixed_depth = None, tree_structure = 'Complete',
+                 is_classification = True, classification_objective = 'min_height', fixed_depth = None, tree_structure = 'Complete',
                  ):
         
         """Initializes the SATreeCraft instance with provided dataset and configuration."""
@@ -51,7 +51,7 @@ class SATreeCraft:
         self.features_numerical = features_numerical
         self.features_categorical = features_categorical
         self.is_classification = is_classification
-        self.classifciation_objective = classifciation_objective
+        self.classification_objective = classification_objective
         self.fixed_depth = fixed_depth
         self.tree_structure = tree_structure
         
@@ -168,7 +168,7 @@ class SATreeCraft:
             
             if self.features_categorical is not None and len(self.features_categorical) > 0: # categorical feature dataset
                 
-                if self.classifciation_objective == 'min_height': # minimum height 100% accuracy on training problem
+                if self.classification_objective == 'min_height': # minimum height 100% accuracy on training problem
                     self.model, self.final_literals, self.min_depth, self.sat_solution, self.final_cnf = self.find_min_depth_tree_categorical_problem(self.features, 
                                                                                                               self.features_categorical, 
                                                                                                               self.features_numerical, 
@@ -182,7 +182,7 @@ class SATreeCraft:
                                                                                                               self.dataset, 
                                                                                                               self.fixed_depth)
             else: # numerical feature dataset strictly
-                if self.classifciation_objective == 'min_height':
+                if self.classification_objective == 'min_height':
                     self.model, self.final_literals, self.min_depth,self.sat_solution, self.final_cnf = self.find_min_depth_tree_problem(self.features, 
                                                                                                                           self.labels, 
                                                                                                                           self.true_labels_for_points, 
@@ -212,7 +212,7 @@ class SATreeCraft:
         of the CNF with external solvers. Export before solving max accuracy problem.
         """
         if self.is_classification: # classifciation problem domain
-                if self.classifciation_objective != 'min_height': # minimum height 100% accuracy on training problem
+                if self.classification_objective != 'min_height': # minimum height 100% accuracy on training problem
                     
                     tree_with_thresholds = None
                     tree = None
@@ -240,7 +240,7 @@ class SATreeCraft:
         This allows for External solver support of the CNF problem.
         """
         if self.is_classification: # classifciation problem domain
-                if self.classifciation_objective == 'min_height': # minimum height 100% accuracy on training problem
+                if self.classification_objective == 'min_height': # minimum height 100% accuracy on training problem
                     solution = "No solution exists"
                     tree_with_thresholds = None
                     tree = None
@@ -284,7 +284,7 @@ class SATreeCraft:
         '''
         print("\nSolution of Literals")
         
-        if self.classifciation_objective == 'min_height':
+        if self.classification_objective == 'min_height':
             var_types = ['a', 's', 'z', 'g']
         else:
             var_types = ['a', 's', 'z', 'g','p']
@@ -295,7 +295,7 @@ class SATreeCraft:
                 for row in matrix:
                     print(' '.join(map(str, row)))
                 print("\n")
-            elif var_type == 'p' and self.classifciation_objective != 'min_height':
+            elif var_type == 'p' and self.classification_objective != 'min_height':
                 # finish the p_literals 
                 print("P Variables:")
                 for p_literal, value in self.final_literals.items():
