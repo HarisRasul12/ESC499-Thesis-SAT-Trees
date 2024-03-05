@@ -41,7 +41,7 @@ class SATreeCraft:
 
     def __init__(self, dataset,features,labels, true_labels_for_points, features_numerical = None, features_categorical = None,
                  is_classification = True, classification_objective = 'min_height', fixed_depth = None, tree_structure = 'Complete', min_support = 0,
-                 ):
+                 min_margin = 1):
         
         """Initializes the SATreeCraft instance with provided dataset and configuration."""
 
@@ -56,6 +56,7 @@ class SATreeCraft:
         self.fixed_depth = fixed_depth
         self.tree_structure = tree_structure
         self.min_support = min_support
+        self.min_margin = min_margin
         
         self.tree_model = None
         self.sat_solution = None
@@ -103,6 +104,7 @@ class SATreeCraft:
 
         if (self.min_support > 0):
             wcnf = min_support(wcnf, literals, dataset, TL, self.min_support)
+
         solution,cost = solve_wcnf(wcnf, literals, TL, tree, labels, features, dataset)
         
         if solution != "No solution exists":
@@ -149,10 +151,18 @@ class SATreeCraft:
 
         tree, TB, TL = build_complete_tree(depth)
         literals = create_literals_fixed_tree(TB, TL, features, labels, len(dataset))
-        wcnf = build_clauses_fixed_tree(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
 
+        # min margin constraint - only for numerical problem 
+        if (self.min_margin > 1):
+            wcnf = build_clauses_fixed_tree_min_margin_constraint_add(literals, dataset, TB, TL, len(features), labels, true_labels_for_points, self.min_margin)
+    
+        else:
+            wcnf = build_clauses_fixed_tree(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
+
+        # min support constraint 
         if (self.min_support > 0):
             wcnf = min_support(wcnf, literals, dataset, TL, self.min_support)
+
         solution,cost = solve_wcnf(wcnf, literals, TL, tree, labels, features, dataset)
         
         if solution != "No solution exists":
