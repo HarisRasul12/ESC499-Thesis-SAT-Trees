@@ -252,7 +252,7 @@ class TreeDataLoaderWithCategorical:
                 mask[self.numerical_indices] = False  # Set the indices in x to False
                 self.features_categorical = self.features[mask]  # Y contains el
 
-def k_fold_tester(k, depth, dataset, true_labels_for_points, labels, features, features_categorical=None, features_numerical=None, complete_tree=True):
+def k_fold_tester(k, depth, dataset, true_labels_for_points, labels, features, features_categorical=None, features_numerical=None, complete_tree=True, min_support_level = 0):
     '''
     Inputs:
     k - number of folds ; (int)
@@ -278,6 +278,7 @@ def k_fold_tester(k, depth, dataset, true_labels_for_points, labels, features, f
         y_train, y_test = true_labels_for_points[train_index], true_labels_for_points[test_index]
 
         # Assuming SATreeCraft and SATreeClassifier are defined elsewhere and work similarly to scikit-learn models
+        # print(min_support_level)
         max_accuracy_problem = SATreeCraft(dataset=X_train,
                                            features=features,
                                            labels=labels,
@@ -285,7 +286,8 @@ def k_fold_tester(k, depth, dataset, true_labels_for_points, labels, features, f
                                            features_categorical=features_categorical,
                                            features_numerical=features_numerical,
                                            classification_objective='max_accuracy',
-                                           fixed_depth=depth)
+                                           fixed_depth=depth,
+                                           min_support = min_support_level)
         # build model
         max_accuracy_problem.solve()
         model = SATreeClassifier(max_accuracy_problem.model)

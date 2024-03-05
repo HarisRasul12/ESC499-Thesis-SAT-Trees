@@ -13,6 +13,7 @@ from classification_problems.min_height_tree_categorical_module import *
 from classification_problems.fixed_height_tree_categorical_module import *
 
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from classification_problems.additional_classification_constraints import *
 
 class SATreeCraft:
     """
@@ -39,7 +40,7 @@ class SATreeCraft:
     """
 
     def __init__(self, dataset,features,labels, true_labels_for_points, features_numerical = None, features_categorical = None,
-                 is_classification = True, classification_objective = 'min_height', fixed_depth = None, tree_structure = 'Complete',
+                 is_classification = True, classification_objective = 'min_height', fixed_depth = None, tree_structure = 'Complete', min_support = 0,
                  ):
         
         """Initializes the SATreeCraft instance with provided dataset and configuration."""
@@ -54,6 +55,7 @@ class SATreeCraft:
         self.classification_objective = classification_objective
         self.fixed_depth = fixed_depth
         self.tree_structure = tree_structure
+        self.min_support = min_support
         
         self.tree_model = None
         self.sat_solution = None
@@ -96,7 +98,11 @@ class SATreeCraft:
 
         tree, TB, TL = build_complete_tree(depth)
         literals = create_literals_fixed_tree(TB, TL, features, labels, len(dataset))
+
         wcnf = build_clauses_categorical_fixed(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels,true_labels_for_points)
+
+        if (self.min_support > 0):
+            wcnf = min_support(wcnf, literals, dataset, TL, self.min_support)
         solution,cost = solve_wcnf(wcnf, literals, TL, tree, labels, features, dataset)
         
         if solution != "No solution exists":
@@ -144,6 +150,9 @@ class SATreeCraft:
         tree, TB, TL = build_complete_tree(depth)
         literals = create_literals_fixed_tree(TB, TL, features, labels, len(dataset))
         wcnf = build_clauses_fixed_tree(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
+
+        if (self.min_support > 0):
+            wcnf = min_support(wcnf, literals, dataset, TL, self.min_support)
         solution,cost = solve_wcnf(wcnf, literals, TL, tree, labels, features, dataset)
         
         if solution != "No solution exists":
