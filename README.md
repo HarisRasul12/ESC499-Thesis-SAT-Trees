@@ -71,3 +71,6 @@ Classification Constraints:
 
 # Datasets:
 Datasets can be accessed via this link: https://archive.ics.uci.edu
+
+# Contributors
+1. Haris Rasul, AI Engineering - UofT
