@@ -1,6 +1,12 @@
-# ESC499-Thesis-SAT-Trees
+# ESC499-Thesis-SAT-Trees Library: SATreeCraft, an Open Source Python SAT Optimization Library for the Construction of Optimal Decision Trees
 
-This contains the Python library for the Engineering Science Thesis by Haris Rasul 2023-2024
+<p align="center">
+<img width="200" alt="Screenshot 2024-03-05 at 1 29 24 AM" src="https://github.com/HarisRasul12/ESC499-Thesis-SAT-Trees/assets/66268214/498cb519-4745-42a2-89b4-2565ad0dfe35">
+</p>
+
+
+ <strong>This contains the Python library code for the Engineering Science Thesis by Haris Rasul 2023-2024. </strong>
+
 
 # Depedancies:
 
