@@ -17,6 +17,7 @@ SATreeCraft is a Python Library designed to solve classification problems using 
 
 Currently Supports:
 - Classifcation Objectives: Min height, Max accuracy
+- Classification Constraints: Cardinality constraint Minimum support, Minimum Margin Constraints
 - Clustering Objectives:
 - External SAT solver support is offered 
 
@@ -62,6 +63,11 @@ Please note that categorical feature tree modules have bene created for the min 
 
 4. min_height_tree_categorical_module.py - min height tree problem with categorical dataset
 5. fixed_height_tree_categorical_module.py - fixed height max accuarcy with categorical dataset
+
+
+# Constraint modules:
+Classification Constraints:
+- additional_classification_constraints.py - contains cardinality constraint such as minimum support and other additional constraints user can put onto their tree constructor such as minimum margin.
 
 # Datasets:
 Datasets can be accessed via this link: https://archive.ics.uci.edu
