@@ -10,12 +10,14 @@
 
 # Depedancies:
 
-1. pySAT
-2. graphviz
-3. Numpy
-4. Sklearn
-5. openpxyl
-6. pandas
+<ol>
+  <li><a href="https://pysathq.github.io/installation/" target="_blank">pySAT</a></li>
+  <li><a href="https://pypi.org/project/graphviz/" target="_blank">graphviz</a></li>
+  <li><a href="https://numpy.org/install/" target="_blank">Numpy</a></li>
+  <li><a href="https://scikit-learn.org/stable/install.html" target="_blank">Sklearn</a></li>
+  <li><a href="https://pypi.org/project/openpyxl/" target="_blank">openpxyl</a></li>
+  <li><a href="https://pandas.pydata.org/docs/getting_started/install.html" target="_blank">pandas</a></li>
+</ol>
 
 # SATreeCraft 
 
