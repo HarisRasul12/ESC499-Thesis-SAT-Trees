@@ -17,6 +17,7 @@
   <li><a href="https://scikit-learn.org/stable/install.html" target="_blank">Sklearn</a></li>
   <li><a href="https://pypi.org/project/openpyxl/" target="_blank">openpxyl</a></li>
   <li><a href="https://pandas.pydata.org/docs/getting_started/install.html" target="_blank">pandas</a></li>
+  <li><a href="https://github.com/jezberg/loandra" target="_blank">Loandra</a></li>
 </ol>
 
 # SATreeCraft 
