@@ -32,7 +32,7 @@ class SATreeCraft:
         is_classification (bool): Flag to indicate if the problem is classification. Default is True. Will support Clustering in future 
         classification_objective (str): The objective of the classification ('min_height' or 'max_accuracy').
         fixed_depth (int, optional): The depth of the tree if 'max_accuracy' is the classification objective.
-        tree_structure (str): The type of tree structure to build ('Complete' or other types if supported in the future).
+        tree_structure (str): The type of tree structure to build ('Complete' or 'Oblivious').
 
     Methods:
         solve: Determines the appropriate solving strategy based on the problem domain and objectives.
@@ -78,6 +78,11 @@ class SATreeCraft:
             tree, TB, TL = build_complete_tree(depth)
             literals = create_literals(TB, TL, features, labels, len(dataset))
             cnf = build_clauses_categorical(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels, true_labels_for_points)
+
+            # Oblivious Tree Constraints addition if ever used 
+            if (self.tree_structure == 'Oblivious'):
+                cnf = add_oblivious_tree_constraints(cnf,features,depth,literals)
+
             solution = solve_cnf(cnf, literals, TL, tree, labels, features, dataset)
             
             if solution != "No solution exists":
@@ -102,8 +107,13 @@ class SATreeCraft:
 
         wcnf = build_clauses_categorical_fixed(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels,true_labels_for_points)
 
+        # Min support constraint can be added
         if (self.min_support > 0):
             wcnf = min_support(wcnf, literals, dataset, TL, self.min_support)
+        
+        # Oblivious Tree Structure Encodings enforced assuming not complete 
+        if (self.tree_structure == 'Oblivious'):
+            wcnf = add_oblivious_tree_constraints(wcnf,features,depth,literals)
 
         solution,cost = solve_wcnf(wcnf, literals, TL, tree, labels, features, dataset)
         
@@ -130,6 +140,11 @@ class SATreeCraft:
             tree, TB, TL = build_complete_tree(depth)
             literals = create_literals(TB, TL, features, labels, len(dataset))
             cnf = build_clauses(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
+            
+            # Oblivious Tree Constraints addition if ever used 
+            if (self.tree_structure == 'Oblivious'):
+                cnf = add_oblivious_tree_constraints(cnf,features,depth,literals)
+
             solution = solve_cnf(cnf, literals, TL, tree, labels, features, dataset)
             
             if solution != "No solution exists":
@@ -162,6 +177,11 @@ class SATreeCraft:
         # min support constraint 
         if (self.min_support > 0):
             wcnf = min_support(wcnf, literals, dataset, TL, self.min_support)
+        
+        # Oblivious Tree Structure Encodings enforced assuming not complete 
+        if (self.tree_structure == 'Oblivious'):
+            # print("adding oblivious contraints")
+            wcnf = add_oblivious_tree_constraints(wcnf,features,depth,literals)
 
         solution,cost = solve_wcnf(wcnf, literals, TL, tree, labels, features, dataset)
         

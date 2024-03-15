@@ -271,6 +271,12 @@ def k_fold_tester(k, depth, dataset, true_labels_for_points, labels, features, f
     k_fold_array - np.ndarray of k length with all k runs of training accuracies
     mean_accuracy - mean score of the array
     '''
+    if complete_tree == True:
+        tree_structure = 'Complete'
+    else:
+        tree_structure = 'Oblivious'
+
+
     k_accuracies = []
     kf = KFold(n_splits=k, shuffle=True)
 
@@ -289,7 +295,8 @@ def k_fold_tester(k, depth, dataset, true_labels_for_points, labels, features, f
                                            classification_objective='max_accuracy',
                                            fixed_depth=depth,
                                            min_support = min_support_level,
-                                           min_margin= min_margin_level)
+                                           min_margin= min_margin_level,
+                                           tree_structure= tree_structure)
         # build model
         max_accuracy_problem.solve()
         model = SATreeClassifier(max_accuracy_problem.model)
