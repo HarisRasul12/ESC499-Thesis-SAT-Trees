@@ -77,6 +77,16 @@ Please note that categorical feature tree modules have bene created for the min 
 Classification Constraints:
 - additional_classification_constraints.py - contains cardinality constraint such as minimum support and other additional constraints user can put onto their tree constructor such as minimum margin.
 
+1. min_support(wcnf, literals, X, TL, min_support) -  Add minimum support constraints for decision tree leaf nodes.
+2. build_clauses_fixed_tree_min_margin_constraint_add(wcnf, min_margin (int) ) - minumim margin constraint added  to existing problem
+3. add_oblivious_tree_constraints(cnf, features, depth, literals) - Add constraints to the CNF for an oblivious tree where all nodes at the same level
+    must select the same feature for splitting.
+
+The Oblivious Tree constraint uses the Type 1 Definition (as of now) - all branch nodes on the same level use the same feature as splitting criteria. This is an extension of P. Shati, E. Cohen, and S. McIlraith, “Optimal decision trees for interpretable clustering with constraints,” Proceedings of the Thirty-Second International Joint Conference on Artificial Intelligence, 2023. doi:10.24963/ijcai.2023/225 :
+
+<img width="536" alt="Screenshot 2024-03-15 at 1 20 26 AM" src="https://github.com/HarisRasul12/ESC499-Thesis-SAT-Trees/assets/66268214/31bd4c51-3ee7-46af-85fe-35adb9ef528a">
+<img width="293" alt="Screenshot 2024-03-15 at 1 21 01 AM" src="https://github.com/HarisRasul12/ESC499-Thesis-SAT-Trees/assets/66268214/bcac36b0-7a58-4c60-b964-f26981f77dde">
+
 # Datasets:
 Datasets can be accessed via this link: https://archive.ics.uci.edu
 
