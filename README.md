@@ -91,5 +91,15 @@ The Oblivious Tree constraint uses the Type 1 Definition (as of now) - all branc
 # Datasets:
 Datasets can be accessed via this link: https://archive.ics.uci.edu
 
+
+# External Solver Support: LOANDRA
+This library supports External SAT solver for the problems aside from PySATs in built solvers. Our libarary calls the Loandra solver for DIMACS file types: 
+
+Berg, J., Demirović, E. and Stuckey, P.J., 2019. Core-boosted linear search for incomplete MaxSAT. In Integration of Constraint Programming, Artificial Intelligence, and Operations Research: 16th International Conference, CPAIOR 2019, Thessaloniki, Greece, June 4–7, 2019, Proceedings 16 (pp. 39-56). Springer International Publishing.
+
+User must set its solver path in compliance to its solving method.
+
+https://github.com/jezberg/loandra
+
 # Contributors
 1. Haris Rasul, AI Engineering - UofT
