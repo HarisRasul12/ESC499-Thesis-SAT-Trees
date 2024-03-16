@@ -1,30 +1,47 @@
-# 1. Critical Files
+# SATreeCraft - An Exact Optimization algorithm Library for Producing interpretable Decision Trees
 
-1. SATreeCraft.py - main moudle that stores tree constructor class
-2. SATreeClassifierpy - contains predictor model extension from Tree solution object created by SATreeCraft
-3. utils.py - dataloader methods, sklearn metrics overlay on top of tree models
+## Table of Contents
+- [1. Critical Files](#1-critical-files)
+- [2. Jupyter Notebooks Demo](#2-jupyter-notebooks-demo)
+- [3. DIMACS Files](#3-dimacs-files)
+- [4. Classification Problems](#4-classification-problems)
+- [5. Images](#5-images)
+- [6. Loandra Support](#6-loandra-support)
 
-# 2. Jupyter Notebooks Demo
+## 1. Critical Files
+- `SATreeCraft.py`: Main module containing the `TreeConstructor` class for tree data structure manipulation.
+- `SATreeClassifier.py`: Extends the tree solution object from `SATreeCraft`, including predictor models.
+- `utils.py`: Provides data loader methods, integration with `sklearn` metrics, and a metrics overlay for tree models.
 
-1. Datareader.ipynb - classification tests for all datasets used in original sources (classifacation probelsm only)
-2. ExternalSolverSupport.ipynb - LOANDRA solver support showcase demo 
-3. ComprehensiveTest.ipynb - data loader, model solution solver, and precstion statitics demo showcase
+## 2. Jupyter Notebooks Demo
+- `Datareader.ipynb`: Performs classification tests on all datasets, focused solely on classification problems.
+- `ExternalSolverSupport.ipynb`: Demonstrates how to integrate with the LOANDRA solver for advanced problem-solving.
+- `ComprehensiveTest.ipynb`: A comprehensive demo including data loading, model solution, and statistical analysis.
 
-# 3. dimacs
+## 3. DIMACS Files
+This directory contains `.dimac` files, which allow for the exporting of solutions to integrate with LOANDRA's solver system.
 
-This folder contains the dimac file type that one can export their solution to produce LOANDRA solutions
+## 4. Classification Problems
+- This directory holds all code modules related to classification problems, aimed at maximizing accuracy and minimizing tree height.
+- It supports datasets with both categorical and numerical features.
 
-# 4. classification_problems
+## 5. Images
+- Contains visualizations of decision trees, which can be generated using either PySAT or Loandra based on the user's input.
 
-- This folder contains the code modules of all cassication problems - max accuracy and min height problems 
-- Supports both categorical and numerical feature datasets
+## 6. Loandra Support
+- Includes subprocess code for interfacing with a locally installed version of Loandra via Python's `os` module and the command line interface.
 
+## Getting Started
+Please ensure PySAT is installed (LOANDRA is optional)
 
-# 5. images 
+## Usage
+Provide examples of how to use your project.
 
-- This folder contains the tree visualization of the solution found by either PySAT or Loandra for a user's given problem
+## Contributing
+Open Source Library for Classification and Reegression Trees
 
+## License
+Under property of The Faculty of Engineering, University of Toronto
 
-# 6. loandra_support 
-
-- This folder contains the subprocess code to call one's local isntalled version of Lonadra via python OS and command line
+## Contact
+email: rasul.haris12@gmail.com
