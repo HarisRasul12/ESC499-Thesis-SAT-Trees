@@ -400,6 +400,91 @@ class SATreeCraft:
             return 'No solution'
         
         return tree_with_thresholds, literals, depth, solution, cost, wcnf
+    
+
+    def find_min_depth_tree_problem_loandra(self, features, labels, true_labels_for_points, dataset,loandra_path,execution_path):
+        depth = 1  # Start with a depth of 1
+        solution = "No solution exists"
+        tree_with_thresholds = None
+        tree = None
+        literals = None
+
+        while solution == "No solution exists":
+            tree, TB, TL = build_complete_tree(depth)
+            literals = create_literals(TB, TL, features, labels, len(dataset))
+            cnf = build_clauses(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
+            
+            # Oblivious Tree Constraints addition if ever used 
+            if (self.tree_structure == 'Oblivious'):
+                cnf = add_oblivious_tree_constraints(cnf,features,depth,literals)
+
+            
+            # LOANDRA SUPPORT - EXPORT FILE
+            
+            # LOANDRA SUPPORT - NEED TO CONNVERT TO NCF MAX SAT PROBLEM BASED ON THEIR IMPLMENTATION (ALL HARD CLAUSES)
+            wcnf = WCNF()
+            for clause in cnf:
+                wcnf.append(clause)             
+            wcnf.to_file(execution_path)
+            
+            
+            solution,cost = run_loandra_and_parse_results(loandra_path, execution_path)
+            
+            # NO SOLUTION FOUND FROM MAX SAT - BECAUSE SCORE IS NOT ZERO!
+            if cost != 0:
+                solution = "No solution exists"
+            
+            if solution != "No solution exists":
+                solution = transform_tree_from_loandra(solution, literals, TL, tree, labels,features,dataset)
+                tree_with_thresholds = add_thresholds(tree, literals, solution, dataset)
+                dot = visualize_tree(tree_with_thresholds)
+                dot.render(f'images/min_height/LOANDRA_SOLVED_binary_decision_tree_min_depth_{depth}', format='png', cleanup=True)
+            else:
+                print('no solution at depth', depth)
+                depth += 1  # Increase the depth and try again
+        
+        return tree_with_thresholds, literals, depth, solution, cnf
+
+
+    def find_min_depth_tree_categorical_problem_loandra(self, features, features_categorical, features_numerical, labels, 
+                                                        true_labels_for_points, dataset, loandra_path, execution_path):
+        depth = 1  # Start with a depth of 1
+        solution = "No solution exists"
+        tree_with_thresholds = None
+        tree = None
+        literals = None
+
+        while solution == "No solution exists":
+            tree, TB, TL = build_complete_tree(depth)
+            literals = create_literals(TB, TL, features, labels, len(dataset))
+            cnf = build_clauses_categorical(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels, true_labels_for_points)
+
+            # Oblivious Tree Constraints addition if ever used 
+            if (self.tree_structure == 'Oblivious'):
+                cnf = add_oblivious_tree_constraints(cnf,features,depth,literals)
+
+            # LOANDRA SUPPORT - NEED TO CONNVERT TO NCF MAX SAT PROBLEM BASED ON THEIR IMPLMENTATION (ALL HARD CLAUSES)
+            wcnf = WCNF()
+            for clause in cnf:
+                wcnf.append(clause)             
+            wcnf.to_file(execution_path)
+            solution,cost = run_loandra_and_parse_results(loandra_path, execution_path)
+
+            # NO SOLUTION FOUND FROM MAX SAT - BECAUSE SCORE IS NOT ZERO!
+            if cost != 0:
+                solution = "No solution exists"
+            
+            if solution != "No solution exists":
+                solution = transform_tree_from_loandra(solution, literals, TL, tree, labels,features,dataset)
+                tree_with_thresholds = add_thresholds_categorical(tree, literals, solution, dataset, features_categorical)
+                dot = visualize_tree(tree_with_thresholds)
+                dot.render(f'images/min_height/LOANDRA_SOLVED_binary_decision_tree_min_depth_with_categorical_features_depth_{depth}', format='png', cleanup=True)
+            else:
+                print("No solution at depth: ", depth)
+                depth += 1  # Increase the depth and try again
+        
+        return tree_with_thresholds, literals, depth, solution, cnf
+
 
     def solve_loandra(self,loandra_path,execution_path):
         """
@@ -414,10 +499,12 @@ class SATreeCraft:
             if self.features_categorical is not None and len(self.features_categorical) > 0: # categorical feature dataset
                 
                 if self.classification_objective == 'min_height': # minimum height 100% accuracy on training problem
-                    self.model, self.final_literals, self.min_depth, self.sat_solution, self.final_cnf = self.find_min_depth_tree_categorical_problem(self.features, 
+                    self.model, self.final_literals, self.min_depth, self.sat_solution, self.final_cnf = self.find_min_depth_tree_categorical_problem_loandra(self.features, 
                                                                                                               self.features_categorical, 
                                                                                                               self.features_numerical, 
-                                                                                                              self.labels, self.true_labels_for_points, self.dataset)
+                                                                                                              self.labels, self.true_labels_for_points, self.dataset,
+                                                                                                              loandra_path,
+                                                                                                              execution_path)
                 else: # Max accuracy problem
                     self.model, self.final_literals, self.fixed_depth, self.sat_solution, self.min_cost, self.final_cnf = self.find_fixed_depth_tree_categorical_problem_loandra(self.features, 
                                                                                                               self.features_categorical, 
@@ -430,10 +517,12 @@ class SATreeCraft:
                                                                                                               execution_path)
             else: # numerical feature dataset strictly
                 if self.classification_objective == 'min_height':
-                    self.model, self.final_literals, self.min_depth,self.sat_solution, self.final_cnf = self.find_min_depth_tree_problem(self.features, 
+                    self.model, self.final_literals, self.min_depth,self.sat_solution, self.final_cnf = self.find_min_depth_tree_problem_loandra(self.features, 
                                                                                                                           self.labels, 
                                                                                                                           self.true_labels_for_points, 
-                                                                                                                          self.dataset)
+                                                                                                                          self.dataset,
+                                                                                                                          loandra_path,
+                                                                                                                          execution_path)
                 else: # max accuracy problem
                     self.model, self.final_literals, self.fixed_depth, self.sat_solution, self.min_cost, self.final_cnf = self.find_fixed_depth_tree_problem_loandra(self.features, 
                                                                                                                self.labels, 
