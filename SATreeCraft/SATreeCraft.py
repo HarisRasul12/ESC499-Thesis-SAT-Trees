@@ -15,6 +15,8 @@ from classification_problems.fixed_height_tree_categorical_module import *
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from classification_problems.additional_classification_constraints import *
 
+from loandra_support.loandra import *
+
 class SATreeCraft:
     """
     SATreeCraft is a Python Library designed to solve classification problems
@@ -232,6 +234,10 @@ class SATreeCraft:
                                                                                                                self.true_labels_for_points, 
                                                                                                                self.dataset,
                                                                                                                self.fixed_depth)
+    
+    ############################## LOANDRA Functionality Support for External SOLVING ###################################
+    
+    
     def export_cnf(self, filename='dimacs/export_to_solver.cnf'):
         """
         Exports the final CNF formula to a file in DIMACS format. This allows for the use
@@ -243,7 +249,19 @@ class SATreeCraft:
         else:
             raise ValueError("Cannot export CNF. The final CNF is not available. Make sure to solve the problem first.")
 
-
+    def export_cnf_min_height(self, filename='dimacs/export_to_solver_min_height.cnf'):
+        """
+        Exports the final CNF formula to a file in DIMACS format. This allows for the use
+        of the CNF with external solvers. The export is only available after solving the CNF. 
+        Supports both weighted and non weighted cnf. 
+        """
+        if self.final_cnf:
+            wcnf = WCNF()
+            for clause in self.final_cnf:
+                    wcnf.append(clause)
+            wcnf.to_file(filename)
+        else:
+            raise ValueError("Cannot export CNF. The final CNF is not available")
     
     def export_cnf_max_accuracy_problem(self, filename='dimacs/export_to_solver_max_acc_problem.cnf'):
         """
@@ -293,13 +311,141 @@ class SATreeCraft:
                                                         self.features_categorical, self.features_numerical, self.labels, self.true_labels_for_points)
                     else:
                         cnf = build_clauses(literals, self.dataset, TB, TL, len(self.features), self.labels, self.true_labels_for_points)
-                    cnf.to_file(filename)
+                    wcnf = WCNF()
+                    for clause in cnf:
+                        wcnf.append(clause)
+                    wcnf.to_file(filename)
                 else:
                     ("Must be a min height objective")
         else:
             ("Cannot export CNF ")
     
     
+    def find_fixed_depth_tree_problem_loandra(self, features, labels, true_labels_for_points, dataset, depth, loandra_path, execution_path):
+        solution = "No solution exists"
+        tree_with_thresholds = None
+        tree = None
+        literals = None
+        cost = None
+
+        tree, TB, TL = build_complete_tree(depth)
+        literals = create_literals_fixed_tree(TB, TL, features, labels, len(dataset))
+
+        # min margin constraint - only for numerical problem 
+        if (self.min_margin > 1):
+            wcnf = build_clauses_fixed_tree_min_margin_constraint_add(literals, dataset, TB, TL, len(features), labels, true_labels_for_points, self.min_margin)
+    
+        else:
+            wcnf = build_clauses_fixed_tree(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
+
+        # min support constraint 
+        if (self.min_support > 0):
+            wcnf = min_support(wcnf, literals, dataset, TL, self.min_support)
+        
+        # Oblivious Tree Structure Encodings enforced assuming not complete 
+        if (self.tree_structure == 'Oblivious'):
+            # print("adding oblivious contraints")
+            wcnf = add_oblivious_tree_constraints(wcnf,features,depth,literals)
+
+        
+        # LOANDRA SUPPORT - EXPORT FILE 
+        wcnf.to_file(execution_path)
+        solution,cost = run_loandra_and_parse_results(loandra_path, execution_path)
+        solution = transform_tree_from_loandra(solution, literals, TL, tree, labels,features,dataset)
+
+
+        if solution != "No solution exists":
+            tree_with_thresholds = add_thresholds(tree, literals, solution, dataset)
+            dot = visualize_tree(tree_with_thresholds)
+            dot.render(f'images/fixed_height/LOANDRA_SOLVED_binary_decision_tree_fixed_depth_{depth}', format='png', cleanup=True)
+        else:
+            print('could not find solution')
+            return 'No solution'
+        
+        return tree_with_thresholds, literals, depth, solution, cost, wcnf
+
+
+    def find_fixed_depth_tree_categorical_problem_loandra(self, features, features_categorical, features_numerical, labels, true_labels_for_points, 
+                                                          dataset, depth, loandra_path, execution_path):
+        solution = "No solution exists"
+        tree_with_thresholds = None
+        tree = None
+        literals = None
+        cost = None
+
+        tree, TB, TL = build_complete_tree(depth)
+        literals = create_literals_fixed_tree(TB, TL, features, labels, len(dataset))
+
+        wcnf = build_clauses_categorical_fixed(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels,true_labels_for_points)
+
+        # Min support constraint can be added
+        if (self.min_support > 0):
+            wcnf = min_support(wcnf, literals, dataset, TL, self.min_support)
+        
+        # Oblivious Tree Structure Encodings enforced assuming not complete 
+        if (self.tree_structure == 'Oblivious'):
+            wcnf = add_oblivious_tree_constraints(wcnf,features,depth,literals)
+
+        # LOANDRA SUPPORT - EXPORT FILE 
+        wcnf.to_file(execution_path)
+        solution,cost = run_loandra_and_parse_results(loandra_path, execution_path)
+        solution = transform_tree_from_loandra(solution, literals, TL, tree, labels,features,dataset)
+        
+        if solution != "No solution exists":
+            tree_with_thresholds = add_thresholds_categorical(tree, literals, solution, dataset, features_categorical)
+            dot = visualize_tree(tree_with_thresholds)
+            dot.render(f'images/fixed_height/LOANDRA_SOLVED_binary_decision_tree_fixed_with_categorical_features_depth_{depth}', format='png', cleanup=True)
+        else:
+            print('could not find solution')
+            return 'No solution'
+        
+        return tree_with_thresholds, literals, depth, solution, cost, wcnf
+
+    def solve_loandra(self,loandra_path,execution_path):
+        """
+        Solve the decision tree problem based on specified objectives and dataset features. Classifcation or Clustering 
+        It chooses between categorical and numerical feature handling as well as the optimization
+        objective (minimum height or maximum accuracy given a fixed depth).
+        LOANDRA VARIANT - calls external solver support system 
+        """
+
+        if self.is_classification: # classifciation problem domain
+            
+            if self.features_categorical is not None and len(self.features_categorical) > 0: # categorical feature dataset
+                
+                if self.classification_objective == 'min_height': # minimum height 100% accuracy on training problem
+                    self.model, self.final_literals, self.min_depth, self.sat_solution, self.final_cnf = self.find_min_depth_tree_categorical_problem(self.features, 
+                                                                                                              self.features_categorical, 
+                                                                                                              self.features_numerical, 
+                                                                                                              self.labels, self.true_labels_for_points, self.dataset)
+                else: # Max accuracy problem
+                    self.model, self.final_literals, self.fixed_depth, self.sat_solution, self.min_cost, self.final_cnf = self.find_fixed_depth_tree_categorical_problem_loandra(self.features, 
+                                                                                                              self.features_categorical, 
+                                                                                                              self.features_numerical, 
+                                                                                                              self.labels, 
+                                                                                                              self.true_labels_for_points, 
+                                                                                                              self.dataset, 
+                                                                                                              self.fixed_depth,
+                                                                                                              loandra_path,
+                                                                                                              execution_path)
+            else: # numerical feature dataset strictly
+                if self.classification_objective == 'min_height':
+                    self.model, self.final_literals, self.min_depth,self.sat_solution, self.final_cnf = self.find_min_depth_tree_problem(self.features, 
+                                                                                                                          self.labels, 
+                                                                                                                          self.true_labels_for_points, 
+                                                                                                                          self.dataset)
+                else: # max accuracy problem
+                    self.model, self.final_literals, self.fixed_depth, self.sat_solution, self.min_cost, self.final_cnf = self.find_fixed_depth_tree_problem_loandra(self.features, 
+                                                                                                               self.labels, 
+                                                                                                               self.true_labels_for_points, 
+                                                                                                               self.dataset,
+                                                                                                               self.fixed_depth,
+                                                                                                               loandra_path,
+                                                                                                               execution_path)
+
+    ##################################### Auxillary Helper Functions for User Interface #############################
+
+
     def create_solution_matrix(self, literals, solution, var_type):
         # Find the maximum index for this var_type
         max_index = max(int(key.split('_')[1]) for key, value in literals.items() if key.startswith(var_type)) + 1
