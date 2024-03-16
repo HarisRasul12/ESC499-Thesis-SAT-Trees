@@ -1,5 +1,7 @@
 # SATreeCraft - An Exact Optimization algorithm Library for Producing interpretable Decision Trees
 
+# Version 1.0 - April 2024
+
 ## Table of Contents
 - [1. Critical Files](#1-critical-files)
 - [2. Jupyter Notebooks Demo](#2-jupyter-notebooks-demo)
