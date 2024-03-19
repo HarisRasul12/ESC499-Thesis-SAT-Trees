@@ -310,7 +310,7 @@ def k_fold_tester(k, depth, dataset, true_labels_for_points, labels, features, f
 
     return k_accuracies, mean_score
 
-def k_fold_tester_loandra(loandra_path,execution_path,k, depth, dataset, true_labels_for_points, labels, features, features_categorical=None, features_numerical=None, complete_tree=True, min_support_level = 0,
+def k_fold_tester_loandra(loandra_path,k, depth, dataset, true_labels_for_points, labels, features, features_categorical=None, features_numerical=None, complete_tree=True, min_support_level = 0,
                   min_margin_level = 1):
     '''
     Inputs:
@@ -358,7 +358,7 @@ def k_fold_tester_loandra(loandra_path,execution_path,k, depth, dataset, true_la
                                            min_margin= min_margin_level,
                                            tree_structure= tree_structure)
         # build model
-        max_accuracy_problem.solve_loandra(loandra_path,execution_path)
+        max_accuracy_problem.solve_loandra(loandra_path)
         model = SATreeClassifier(max_accuracy_problem.model)
         
         # score model on test data

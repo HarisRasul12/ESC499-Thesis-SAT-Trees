@@ -33,17 +33,15 @@ def run_loandra_and_parse_results(loandra_path, execution_path):
     Please see https://github.com/jezberg/loandra/tree/master for LOANDRA solver details and installations 
     """
 
-    # Capture the original working directory
-    original_path = os.getcwd()
+    # Construct the full path to the loandra executable
+    loandra_executable = os.path.join(loandra_path, './loandra')
 
-    # Navigate to the Loandra directory
-    os.chdir(loandra_path)
-    
-    # Run the Loandra command
-    result = subprocess.run(["./loandra", execution_path, "-print-model"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    
-    # Change back to the original directory if needed
-    os.chdir(original_path)
+    # Construct the full path to the CNF file
+    full_execution_path = os.path.abspath(execution_path)
+
+    # Run the Loandra command with absolute paths
+    result = subprocess.run([loandra_executable, full_execution_path, "-print-model"], 
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     
     # Process result
     output = result.stdout.splitlines()

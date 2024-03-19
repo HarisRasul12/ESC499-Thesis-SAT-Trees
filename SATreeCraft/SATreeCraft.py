@@ -486,7 +486,7 @@ class SATreeCraft:
         return tree_with_thresholds, literals, depth, solution, cnf
 
 
-    def solve_loandra(self,loandra_path,execution_path):
+    def solve_loandra(self,loandra_path,execution_path='dimacs/export_to_solver.cnf'):
         """
         Solve the decision tree problem based on specified objectives and dataset features. Classifcation or Clustering 
         It chooses between categorical and numerical feature handling as well as the optimization
