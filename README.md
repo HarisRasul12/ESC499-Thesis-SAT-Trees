@@ -19,7 +19,7 @@
    - 5.2. [Clustering Constraints](#clustering-constraints)
 6. [Datasets](#datasets)
 7. [External Solver Support](#external-solver-support-loandra)
-8. [Contributors](#contributors)
+8. [Contributors and Acknowledgements](#contributors-and-acknowledgements)
 
 # Dependencies:
 
@@ -136,5 +136,8 @@ User must set its solver path in compliance to its solving method.
 
 https://github.com/jezberg/loandra
 
-# Contributors
-1. Haris Rasul, AI Engineering - UofT
+# Contributors and Acknowledgements
+Contributor: Haris Rasul, AI Engineering - UofT
+
+I would like to thank Professor Eldan Cohen(Department of Mechanical and Industrial Engineering, University of Toronto), and Pouya Shati(Vector Institute, Toronto, Canada) for their mentorship in this Thesis for their constant guidance and supervision. This project is an accumulation of all our work to create a powerful and useful library for practioners to use on classification and clustering tasks using unique SAT encodings for exact optimal solutions.
+
