@@ -300,8 +300,8 @@ class SATreeCraft:
                                                                                                     distance_classes= distance_classes
                                                                                                     )
         cluster_assignments, cluster_diameters = assign_clusters_and_diameters(x_i_c_matrix, dataset, k_clusters)
-        self.plot_and_save_clusters_to_drive(dataset, cluster_assignments, k_clusters)
-        
+        if (len(self.features) <= 2):
+            self.plot_and_save_clusters_to_drive(dataset, cluster_assignments, k_clusters)
         return cluster_assignments, cluster_diameters, literals, solution 
     
     #### SAT Solving given problem ####
@@ -630,7 +630,8 @@ class SATreeCraft:
                                                                                                     distance_classes= distance_classes
                                                                                                     )
         cluster_assignments, cluster_diameters = assign_clusters_and_diameters(x_i_c_matrix, dataset, k_clusters)
-        self.plot_and_save_clusters_to_drive(dataset, cluster_assignments, k_clusters)
+        if (len(self.features) <= 2):
+            self.plot_and_save_clusters_to_drive(dataset, cluster_assignments, k_clusters)
         
         return cluster_assignments, cluster_diameters, literals, solution 
 
