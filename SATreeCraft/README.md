@@ -27,6 +27,9 @@ This directory contains `.dimac` files, which allow for the exporting of solutio
 - This directory holds all code modules related to classification problems, aimed at maximizing accuracy and minimizing tree height.
 - It supports datasets with both categorical and numerical features.
 
+## 4.5 Clustering Problems
+- This dircetory holds the modules for the encodings for clustering problem: Minimize Maximum Diameter as of now Release ver--1.0
+
 ## 5. Images
 - Contains visualizations of decision trees, which can be generated using either PySAT or Loandra based on the user's input.
 
