@@ -41,8 +41,11 @@ SATreeCraft is a Python Library designed to solve classification problems using 
 Currently Supports:
 - Classifcation Objectives: Min height, Max accuracy
 - Classification Constraints: Cardinality constraint Minimum support, Minimum Margin Constraints
-- Clustering Objectives:
-- External SAT solver support is offered 
+
+- Clustering Objectives: Minimize Maximum Diameter
+- Clustering Constraints: Pairwise Must-link, Cannot-link constraints
+  
+- External SAT solver support is offered via LOANDRA
 
 
 # Main Modules
