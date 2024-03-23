@@ -54,6 +54,8 @@ Currently Supports:
 
 # Submodule Code Description:
 
+## Classification Problems:
+
 1. min_height_tree_module.py - this contains the SAT min-height tree problem model proposed in P. Shati, E. Cohen, and S. McIlraith, “Optimal decision trees for interpretable clustering with constraints,” Proceedings of the Thirty-Second International Joint Conference on Artificial Intelligence, 2023. doi:10.24963/ijcai.2023/225
 
 - This itertaively builds the tree with a starting depth of 1 and keeps expanding until solution is found
@@ -74,9 +76,16 @@ Please note that categorical feature tree modules have bene created for the min 
 4. min_height_tree_categorical_module.py - min height tree problem with categorical dataset
 5. fixed_height_tree_categorical_module.py - fixed height max accuarcy with categorical dataset
 
+## Clustering Problems:
 
-# Constraint modules:
-Classification Constraints:
+1. clustering_advanced.py - This contains the encodings for interpretable constrained clustering using SAT Optimized Decsision trees.The SAT formulation follows the encodins proposed in P. Shati, E. Cohen, and S. McIlraith, “Optimal decision trees for interpretable clustering with constraints,” Proceedings of the Thirty-Second International Joint Conference on Artificial Intelligence, 2023. doi:10.24963/ijcai.2023/225
+
+version 1.0.0 currently only supports Clustering objective - Minimize Maximum Diameter:
+
+<img width="494" alt="Screenshot 2024-03-23 at 3 15 21 AM" src="https://github.com/HarisRasul12/ESC499-Thesis-SAT-Trees/assets/66268214/6442428d-2e83-4933-8c78-806e880b80d0">
+
+## Constraint modules:
+### Classification Constraints:
 - additional_classification_constraints.py - contains cardinality constraint such as minimum support and other additional constraints user can put onto their tree constructor such as minimum margin.
 
 1. min_support(wcnf, literals, X, TL, min_support) -  Add minimum support constraints for decision tree leaf nodes.
@@ -89,9 +98,21 @@ The Oblivious Tree constraint uses the Type 1 Definition (as of now) - all branc
 <img width="536" alt="Screenshot 2024-03-15 at 1 20 26 AM" src="https://github.com/HarisRasul12/ESC499-Thesis-SAT-Trees/assets/66268214/31bd4c51-3ee7-46af-85fe-35adb9ef528a">
 <img width="293" alt="Screenshot 2024-03-15 at 1 21 01 AM" src="https://github.com/HarisRasul12/ESC499-Thesis-SAT-Trees/assets/66268214/bcac36b0-7a58-4c60-b964-f26981f77dde">
 
+## Clustering Constraints
+<strong>Please note that Clustering Constraints Must-Link Pairs and Cannot-Link Pairs are embedded within encodings for Clustering Objectives.</strong>
+
+Supports user inputs for Pairwise constraints.
+
+- Must-Link Pairs
+
+<img width="399" alt="Screenshot 2024-03-23 at 3 16 47 AM" src="https://github.com/HarisRasul12/ESC499-Thesis-SAT-Trees/assets/66268214/f2f072e4-7595-49e0-893a-37c4633e9625">
+
+- Cannot-Link Pairs
+
+<img width="493" alt="Screenshot 2024-03-23 at 3 16 23 AM" src="https://github.com/HarisRasul12/ESC499-Thesis-SAT-Trees/assets/66268214/ee558fac-0445-47da-a897-0da92c8c40be">
+
 # Datasets:
 Datasets can be accessed via this link: https://archive.ics.uci.edu
-
 
 # External Solver Support: LOANDRA
 This library supports External SAT solver for the problems aside from PySATs in built solvers. Our libarary calls the Loandra solver for DIMACS file types: 
