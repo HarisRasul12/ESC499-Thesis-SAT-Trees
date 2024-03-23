@@ -7,8 +7,21 @@
 
  <strong>This contains the Python library code for the Engineering Science Thesis by Haris Rasul 2023-2024. </strong>
 
+# Table of Contents
+1. [Dependencies](#dependencies)
+2. [About SATreeCraft](#satreecraft)
+3. [Main Modules](#main-modules)
+4. [Submodule Code Description](#submodule-code-description)
+   - 4.1. [Classification Problems](#classification-problems)
+   - 4.2. [Clustering Problems](#clustering-problems)
+5. [Constraint Modules](#constraint-modules)
+   - 5.1. [Classification Constraints](#classification-constraints)
+   - 5.2. [Clustering Constraints](#clustering-constraints)
+6. [Datasets](#datasets)
+7. [External Solver Support](#external-solver-support-loandra)
+8. [Contributors](#contributors)
 
-# Depedancies:
+# Dependencies:
 
 <ol>
   <li><a href="https://pysathq.github.io/installation/" target="_blank">pySAT</a></li>
