@@ -36,7 +36,7 @@
 
 # SATreeCraft 
 
-SATreeCraft is a Python Library designed to solve classification problems using SAT-based encodings of decision trees to produce excat optimal solutions. It supports datasets with categorical and/or numerical features and can optimize for minimum tree height or maximum accuracy given a fixed depth. It also supports clustering tree objectives such as maximizing minimum split and minimizing maximum diameter
+SATreeCraft is a Python Library designed to solve classification/clustering problems using SAT-based encodings of decision trees to produce excat optimal solutions. It supports datasets with categorical and/or numerical features and can optimize for minimum tree height or maximum accuracy given a fixed depth. It also supports clustering tree objectives such as maximizing minimum split and minimizing maximum diameter
 
 Currently Supports:
 - Classifcation Objectives: Min height, Max accuracy
