@@ -16,9 +16,9 @@
 - `utils.py`: Provides data loader methods, integration with `sklearn` metrics, and a metrics overlay for tree models.
 
 ## 2. Jupyter Notebooks Demo
-- `Datareader.ipynb`: Performs classification tests on all datasets, focused solely on classification problems.
+- `Datareader.ipynb`: Performs classificationtests on all datasets, focused solely on classification problems.
 - `ExternalSolverSupport.ipynb`: Demonstrates how to integrate with the LOANDRA solver for advanced problem-solving.
-- `ComprehensiveTest.ipynb`: A comprehensive demo including data loading, model solution, and statistical analysis.
+- `ComprehensiveTest.ipynb`: A comprehensive demo including data loading, model solution, and statistical analysis with clustering and classification
 
 ## 3. DIMACS Files
 This directory contains `.dimac` files, which allow for the exporting of solutions to integrate with LOANDRA's solver system.
