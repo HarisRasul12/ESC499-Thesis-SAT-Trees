@@ -5,8 +5,10 @@
 # Works on Catgeoircal feature and Numerical feature dataset
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder
-
+import math
+# clasification modules 
 from classification_problems.min_height_tree_module import *
 from classification_problems.fixed_height_tree_module import *
 from classification_problems.min_height_tree_categorical_module import *
@@ -15,6 +17,10 @@ from classification_problems.fixed_height_tree_categorical_module import *
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from classification_problems.additional_classification_constraints import *
 
+# clustering modules 
+from clustering_problems.clustering_advanced import *
+
+# Loandra solver support 
 from loandra_support.loandra import *
 
 class SATreeCraft:
@@ -41,14 +47,17 @@ class SATreeCraft:
         export_cnf: Exports the final CNF formula to a DIMACS format file.
     """
 
-    def __init__(self, dataset,features,labels, true_labels_for_points, features_numerical = None, features_categorical = None,
+    def __init__(self, dataset,features,labels = None, true_labels_for_points = None, features_numerical = None, features_categorical = None,
                  is_classification = True, classification_objective = 'min_height', fixed_depth = None, tree_structure = 'Complete', min_support = 0,
-                 min_margin = 1):
+                 min_margin = 1, k_clusters = None, clustering_objective = 'max_diameter', is_clustering = False, epsilon = 0, CL_pairs = np.array([]), ML_pairs = np.array([])
+                 ):
         
         """Initializes the SATreeCraft instance with provided dataset and configuration."""
 
         self.dataset = dataset
         self.features = features
+        
+        # Classification tools 
         self.labels = labels
         self.true_labels_for_points = true_labels_for_points
         self.features_numerical = features_numerical
@@ -59,13 +68,29 @@ class SATreeCraft:
         self.tree_structure = tree_structure
         self.min_support = min_support
         self.min_margin = min_margin
+
+
+        # Clustering tools
+        self.k_clusters = k_clusters
+        self.clustering_objective = clustering_objective
+        self.is_clustering = is_clustering
         
+        if self.is_clustering or (self.k_clusters is not None):
+            self.is_classification = False
+        
+        self.epsilon = epsilon
+        self.CL_pairs = CL_pairs
+        self.ML_pairs = ML_pairs
+
+        # return types 
         self.tree_model = None
         self.sat_solution = None
         self.min_cost = None
         self.min_depth = None
         self.final_cnf = None
         self.final_literals = None
+        self.cluster_assignments = None
+        self.cluster_diameters = None
 
     ##### Categorical Classfication Problems ####
         
@@ -197,12 +222,95 @@ class SATreeCraft:
         
         return tree_with_thresholds, literals, depth, solution, cost, wcnf
 
+    
+    # Save the plot to the specified directory with the given filename format
+    def plot_and_save_clusters_to_drive(self,dataset, cluster_assignments, k_clusters):
+        """
+        Plots the dataset points before and after clustering if the dataset has 1 or 2 features.
+        Creates a side-by-side plot showing the dataset before clustering and after with cluster IDs.
+        Saves the plot to the specified directory with a filename based on the number of clusters.
+        Does not display the plot in the output.
+
+        Parameters:
+        - dataset (np.ndarray): The original dataset with data points.
+        - cluster_assignments (dict): A dictionary with cluster IDs and lists of data points in each cluster.
+        - k_clusters (int): The number of clusters.
+
+        Returns:
+        - full_path (str): The path to the saved plot image.
+        """
+        # Define the directory and filename
+        directory = 'images/cluster_trees/'
+        filename = f'cluster_tree_with_cluster_size{k_clusters}.png'
+        full_path = directory + filename
+
+        # Create the plot
+        fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+        fig.patch.set_facecolor('white')
+        
+        if dataset.shape[1] == 2:  # If 2D dataset
+            axes[0].scatter(dataset[:, 0], dataset[:, 1], c='gray', label='Data Points')
+            axes[0].set_title('Before Clustering')
+            axes[1].scatter(dataset[:, 0], dataset[:, 1], c='gray', label='Data Points')
+            axes[1].set_title('After Clustering')
+        elif dataset.shape[1] == 1:  # If 1D dataset
+            axes[0].scatter(dataset[:, 0], np.zeros_like(dataset[:, 0]), c='gray', label='Data Points')
+            axes[0].set_title('Before Clustering')
+            axes[1].scatter(dataset[:, 0], np.zeros_like(dataset[:, 0]), c='gray', label='Data Points')
+            axes[1].set_title('After Clustering')
+        else:
+            return 'can only plot 2d or 1d datasets'
+
+        # Assign colors to clusters
+        colors = plt.cm.tab10(np.linspace(0, 1, k_clusters))
+        for cluster_id, data_points in cluster_assignments.items():
+            if dataset.shape[1] == 2:
+                axes[1].scatter(dataset[data_points, 0], dataset[data_points, 1], 
+                                color=colors[cluster_id], label=f'Cluster {cluster_id}')
+            elif dataset.shape[1] == 1:
+                axes[1].scatter(dataset[data_points, 0], np.zeros_like(dataset[data_points, 0]), 
+                                color=colors[cluster_id], label=f'Cluster {cluster_id}')
+
+        # Add legend to the second plot
+        axes[1].legend()
+
+        # Save the figure
+        fig.savefig(full_path)
+        plt.close(fig)  # Close the figure to prevent it from displaying in the output
+        return full_path
+
+    def solve_clustering_problem_max_diameter(self, dataset,features,k_clusters, depth, epsilon, CL_pairs, ML_pairs):
+        dataset_size = len(dataset)
+        num_features = len(features)
+        dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
+        tree_structure, TB, TL = build_complete_tree_clustering(depth)
+        
+        literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size,distance_classes)
+        wcnf = build_clauses_cluster_tree_MD(literals, dataset, TB, TL, num_features, k_clusters,
+                                    CL_pairs, ML_pairs, distance_classes)
+    
+        solution = solve_wcnf_clustering(wcnf)
+        a_matrix, s_matrix, z_matrix, g_matrix, x_i_c_matrix, bw_m_vector = create_literal_matrices(literals=literals,
+                                                                                                    solution=solution,
+                                                                                                    dataset_size=len(dataset),
+                                                                                                    k_clusters=k_clusters,
+                                                                                                    TB=TB,
+                                                                                                    TL=TL,
+                                                                                                    num_features=len(features),
+                                                                                                    distance_classes= distance_classes
+                                                                                                    )
+        cluster_assignments, cluster_diameters = assign_clusters_and_diameters(x_i_c_matrix, dataset, k_clusters)
+        self.plot_and_save_clusters_to_drive(dataset, cluster_assignments, k_clusters)
+        
+        return cluster_assignments, cluster_diameters, literals, solution 
+    
     #### SAT Solving given problem ####
     def solve(self):
         """
         Solve the decision tree problem based on specified objectives and dataset features. Classifcation or Clustering 
         It chooses between categorical and numerical feature handling as well as the optimization
         objective (minimum height or maximum accuracy given a fixed depth).
+        must set is_classification to false to work on clusteirng porblem or set is_clustering to true 
         """
 
         if self.is_classification: # classifciation problem domain
@@ -234,7 +342,18 @@ class SATreeCraft:
                                                                                                                self.true_labels_for_points, 
                                                                                                                self.dataset,
                                                                                                                self.fixed_depth)
-    
+        else:
+            max_clusters = 2 ** self.fixed_depth
+            if self.k_clusters > max_clusters:
+                raise ValueError(f"The assigned depth {self.fixed_depth} is not sufficient to accommodate {self.k_clusters} clusters.")
+            self.cluster_assignments, self.cluster_diameters, self.final_literals, self.sat_solution = self.solve_clustering_problem_max_diameter(self.dataset, 
+                                                                                                                                                  self.features, 
+                                                                                                                                                  self.k_clusters, 
+                                                                                                                                                  self.fixed_depth, 
+                                                                                                                                                  self.epsilon, 
+                                                                                                                                                  self.CL_pairs, 
+                                                                                                                                                  self.ML_pairs)
+
     ############################## LOANDRA Functionality Support for External SOLVING ###################################
     
     
@@ -486,6 +605,36 @@ class SATreeCraft:
         return tree_with_thresholds, literals, depth, solution, cnf
 
 
+    def solve_clustering_problem_max_diameter_loandra(self, dataset,features,k_clusters, depth, epsilon, CL_pairs, ML_pairs,
+                                                      loandra_path,execution_path):
+        dataset_size = len(dataset)
+        num_features = len(features)
+        dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
+        tree_structure, TB, TL = build_complete_tree_clustering(depth)
+        
+        literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size,distance_classes)
+        wcnf = build_clauses_cluster_tree_MD(literals, dataset, TB, TL, num_features, k_clusters,
+                                    CL_pairs, ML_pairs, distance_classes)
+    
+        wcnf.to_file(execution_path)
+       
+        solution,cost = run_loandra_and_parse_results(loandra_path, execution_path)
+        
+        a_matrix, s_matrix, z_matrix, g_matrix, x_i_c_matrix, bw_m_vector = create_literal_matrices(literals=literals,
+                                                                                                    solution=solution,
+                                                                                                    dataset_size=len(dataset),
+                                                                                                    k_clusters=k_clusters,
+                                                                                                    TB=TB,
+                                                                                                    TL=TL,
+                                                                                                    num_features=len(features),
+                                                                                                    distance_classes= distance_classes
+                                                                                                    )
+        cluster_assignments, cluster_diameters = assign_clusters_and_diameters(x_i_c_matrix, dataset, k_clusters)
+        self.plot_and_save_clusters_to_drive(dataset, cluster_assignments, k_clusters)
+        
+        return cluster_assignments, cluster_diameters, literals, solution 
+
+
     def solve_loandra(self,loandra_path,execution_path='dimacs/export_to_solver.cnf'):
         """
         Solve the decision tree problem based on specified objectives and dataset features. Classifcation or Clustering 
@@ -531,7 +680,22 @@ class SATreeCraft:
                                                                                                                self.fixed_depth,
                                                                                                                loandra_path,
                                                                                                                execution_path)
-
+        else:
+            max_clusters = 2 ** self.fixed_depth
+            if self.k_clusters > max_clusters:
+                raise ValueError(f"The assigned depth {self.fixed_depth} is not sufficient to accommodate {self.k_clusters} clusters.")
+            
+            self.cluster_assignments, self.cluster_diameters, self.final_literals, self.sat_solution = self.solve_clustering_problem_max_diameter_loandra(self.dataset, 
+                                                                                                                                                  self.features, 
+                                                                                                                                                  self.k_clusters, 
+                                                                                                                                                  self.fixed_depth, 
+                                                                                                                                                  self.epsilon, 
+                                                                                                                                                  self.CL_pairs, 
+                                                                                                                                                  self.ML_pairs,
+                                                                                                                                                  loandra_path,
+                                                                                                                                                  execution_path
+                                                                                                                                                  )
+ 
     ##################################### Auxillary Helper Functions for User Interface #############################
 
 

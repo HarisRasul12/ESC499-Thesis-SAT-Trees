@@ -513,6 +513,8 @@ def plot_and_save_clusters(dataset, cluster_assignments, k_clusters):
 
     # Create the plot
     fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+
+    
     if dataset.shape[1] == 2:  # If 2D dataset
         axes[0].scatter(dataset[:, 0], dataset[:, 1], c='gray', label='Data Points')
         axes[0].set_title('Before Clustering')
@@ -541,12 +543,39 @@ def plot_and_save_clusters(dataset, cluster_assignments, k_clusters):
 
     # Save the figure
     fig.savefig(full_path)
+    plt.show()
     plt.close(fig)  # Close the figure to prevent it from displaying in the output
 
     return full_path
 
 def clustering_problem(dataset,features,k_clusters, depth, epsilon = 0, CL_pairs = np.array([]), ML_pairs = np.array([])):
-    
+    """
+    Solves a clustering problem by constructing a complete binary tree of a specified depth,
+    creating literals for a SAT solver, building clauses for the SAT problem, and then solving
+    the weighted CNF problem to determine the cluster assignments and the maximum diameter
+    of each cluster.
+
+    Parameters:
+    - dataset (np.ndarray): The dataset containing n-dimensional data points.
+    - features (np.ndarray): Array of feature names or indices.
+    - k_clusters (int): The desired number of clusters to form.
+    - depth (int): The depth of the complete binary tree for clustering.
+    - epsilon (float, optional): The maximum distance difference to consider two distances as similar, defaults to 0.
+    - CL_pairs (np.ndarray, optional): An array of data point pairs that cannot be in the same cluster (cannot-link constraints).
+    - ML_pairs (np.ndarray, optional): An array of data point pairs that must be in the same cluster (must-link constraints).
+
+    Returns:
+    - cluster_assignments (dict): A dictionary with keys as cluster IDs and values as lists of data points in each cluster.
+    - cluster_diameters (dict): A dictionary with keys as cluster IDs and values as the maximum diameter of each cluster.
+
+    The function performs the following steps:
+    - Creates non-overlapping distance classes for all unique pairs of data points in the dataset.
+    - Constructs a complete binary tree for the given depth and assigns branching and leaf nodes.
+    - Generates literals required for the SAT solver based on the tree structure and dataset.
+    - Builds clauses for the SAT solver based on the decision tree encoding.
+    - Solves the weighted CNF problem to find a solution for the clustering.
+    - Assigns data points to clusters based on the solution and calculates the maximum diameter for each cluster.
+    """
     dataset_size = len(dataset)
     num_features = len(features)
     dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
