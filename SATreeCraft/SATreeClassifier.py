@@ -58,7 +58,8 @@ class SATreeClassifier:
                         # Move to the right child
                         node_index = self.tree_model[node_index]['children'][1]
                 else:  # numerical node
-                    if feature_value <= self.tree_model[node_index]['threshold']:
+                    # print(feature_value, self.tree_model[node_index]['threshold'])
+                    if float(feature_value) <= self.tree_model[node_index]['threshold']:
                         # Move to the left child
                         node_index = self.tree_model[node_index]['children'][0]
                     else:
