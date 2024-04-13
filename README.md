@@ -5,7 +5,7 @@
 </p>
 
 
- <strong>This contains the Python library code for the Engineering Science Thesis by Haris Rasul 2023-2024. </strong>
+ <strong>This is the open source Python library produced for the University of Toronto's Engineering Science Program Undergraduate Thesis by Haris Rasul 2023-2024. </strong>
 
 # Table of Contents
 1. [Dependencies](#dependencies)
