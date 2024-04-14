@@ -7,7 +7,7 @@
 
  This is the open source Python library produced for the University of Toronto's Engineering Science Program Undergraduate Thesis by Haris Rasul 2023-2024.
 
-<strong> Full Paper Accessible in the PDF Report: </strong>
+<strong> [Full Paper Accessible in the PDF Report](/Thesis-FinalReport-HarisRasul-2023-24%20copy.pdf) </strong>
 
 Rasul, H., 2024. SATreeCraft: Creating a Flexible Framework for the SAT Encoding of Optimal Decision Trees with Constraints. University of Toronto.
 
