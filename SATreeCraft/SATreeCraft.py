@@ -19,6 +19,7 @@ from classification_problems.additional_classification_constraints import *
 
 # clustering modules 
 from clustering_problems.clustering_advanced import *
+from clustering_problems.clustering_minsplit import *
 
 # Loandra solver support 
 from loandra_support.loandra import *
@@ -302,7 +303,36 @@ class SATreeCraft:
         cluster_assignments, cluster_diameters = assign_clusters_and_diameters(x_i_c_matrix, dataset, k_clusters)
         if (len(self.features) <= 2):
             self.plot_and_save_clusters_to_drive(dataset, cluster_assignments, k_clusters)
-        return cluster_assignments, cluster_diameters, literals, solution 
+        return cluster_assignments, cluster_diameters, literals, solution
+
+
+    def solve_clustering_problem_bicriteria(self, dataset,features, k_clusters, depth, epsilon, CL_pairs, ML_pairs):
+        dataset_size = len(dataset)
+        num_features = len(features)
+        dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
+        tree_structure, TB, TL = build_complete_tree_clustering(depth)
+        
+        literals = create_literals_cluster_tree_bicriteria(TB, TL, features, k_clusters, dataset_size,distance_classes)
+        wcnf = build_clauses_cluster_tree_MD_MS(literals, dataset, TB, TL, num_features, k_clusters,
+                                    CL_pairs, ML_pairs, distance_classes)
+    
+        solution = solve_wcnf_clustering(wcnf)
+        a_matrix, s_matrix, z_matrix, g_matrix, x_i_c_matrix, bw_m_vector, bw_p_vector = create_literal_matrices_bicriteria(
+                                                                                                                            literals=literals,
+                                                                                                                            solution=solution,
+                                                                                                                            dataset_size=len(dataset),
+                                                                                                                            k_clusters=k_clusters,
+                                                                                                                            TB=TB,
+                                                                                                                            TL=TL,
+                                                                                                                            num_features=len(features),
+                                                                                                                            distance_classes= distance_classes
+                                                                                                                            )
+        cluster_assignments, cluster_diameters = assign_clusters_and_diameters(x_i_c_matrix, dataset, k_clusters)
+        if (len(self.features) <= 2):
+            self.plot_and_save_clusters_to_drive(dataset, cluster_assignments, k_clusters)
+        # print(x_i_c_matrix)
+        # print(literals)
+        return cluster_assignments, cluster_diameters, literals, solution         
     
     #### SAT Solving given problem ####
     def solve(self):
@@ -346,13 +376,24 @@ class SATreeCraft:
             max_clusters = 2 ** self.fixed_depth
             if self.k_clusters > max_clusters:
                 raise ValueError(f"The assigned depth {self.fixed_depth} is not sufficient to accommodate {self.k_clusters} clusters.")
-            self.cluster_assignments, self.cluster_diameters, self.final_literals, self.sat_solution = self.solve_clustering_problem_max_diameter(self.dataset, 
-                                                                                                                                                  self.features, 
-                                                                                                                                                  self.k_clusters, 
-                                                                                                                                                  self.fixed_depth, 
-                                                                                                                                                  self.epsilon, 
-                                                                                                                                                  self.CL_pairs, 
-                                                                                                                                                  self.ML_pairs)
+            
+            if self.clustering_objective == 'max_diameter':
+                self.cluster_assignments, self.cluster_diameters, self.final_literals, self.sat_solution = self.solve_clustering_problem_max_diameter(self.dataset, 
+                                                                                                                                                    self.features, 
+                                                                                                                                                    self.k_clusters, 
+                                                                                                                                                    self.fixed_depth, 
+                                                                                                                                                    self.epsilon, 
+                                                                                                                                                    self.CL_pairs, 
+                                                                                                                                                    self.ML_pairs)
+            else: # Bicriteria
+                # print('solving bicriteria') 
+                self.cluster_assignments, self.cluster_diameters, self.final_literals, self.sat_solution = self.solve_clustering_problem_bicriteria(self.dataset, 
+                                                                                                                                                    self.features, 
+                                                                                                                                                    self.k_clusters, 
+                                                                                                                                                    self.fixed_depth, 
+                                                                                                                                                    self.epsilon, 
+                                                                                                                                                    self.CL_pairs, 
+                                                                                                                                                    self.ML_pairs)
 
     ############################## LOANDRA Functionality Support for External SOLVING ###################################
     
@@ -633,7 +674,37 @@ class SATreeCraft:
         if (len(self.features) <= 2):
             self.plot_and_save_clusters_to_drive(dataset, cluster_assignments, k_clusters)
         
-        return cluster_assignments, cluster_diameters, literals, solution 
+        return cluster_assignments, cluster_diameters, literals, solution
+
+    def solve_clustering_problem_bicriteria_loandra(self, dataset,features,k_clusters, depth, epsilon, CL_pairs, ML_pairs,
+                                                      loandra_path,execution_path):
+        dataset_size = len(dataset)
+        num_features = len(features)
+        dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
+        tree_structure, TB, TL = build_complete_tree_clustering(depth)
+        
+        literals = create_literals_cluster_tree_bicriteria(TB, TL, features, k_clusters, dataset_size,distance_classes)
+        wcnf = build_clauses_cluster_tree_MD_MS(literals, dataset, TB, TL, num_features, k_clusters,
+                                    CL_pairs, ML_pairs, distance_classes)
+    
+        wcnf.to_file(execution_path)
+       
+        solution,cost = run_loandra_and_parse_results(loandra_path, execution_path)
+        
+        a_matrix, s_matrix, z_matrix, g_matrix, x_i_c_matrix, bw_m_vector,bw_p_vector = create_literal_matrices_bicriteria(literals=literals,
+                                                                                                    solution=solution,
+                                                                                                    dataset_size=len(dataset),
+                                                                                                    k_clusters=k_clusters,
+                                                                                                    TB=TB,
+                                                                                                    TL=TL,
+                                                                                                    num_features=len(features),
+                                                                                                    distance_classes= distance_classes
+                                                                                                    )
+        cluster_assignments, cluster_diameters = assign_clusters_and_diameters(x_i_c_matrix, dataset, k_clusters)
+        if (len(self.features) <= 2):
+            self.plot_and_save_clusters_to_drive(dataset, cluster_assignments, k_clusters)
+        
+        return cluster_assignments, cluster_diameters, literals, solution  
 
 
     def solve_loandra(self,loandra_path,execution_path='dimacs/export_to_solver.cnf'):
@@ -686,16 +757,29 @@ class SATreeCraft:
             if self.k_clusters > max_clusters:
                 raise ValueError(f"The assigned depth {self.fixed_depth} is not sufficient to accommodate {self.k_clusters} clusters.")
             
-            self.cluster_assignments, self.cluster_diameters, self.final_literals, self.sat_solution = self.solve_clustering_problem_max_diameter_loandra(self.dataset, 
-                                                                                                                                                  self.features, 
-                                                                                                                                                  self.k_clusters, 
-                                                                                                                                                  self.fixed_depth, 
-                                                                                                                                                  self.epsilon, 
-                                                                                                                                                  self.CL_pairs, 
-                                                                                                                                                  self.ML_pairs,
-                                                                                                                                                  loandra_path,
-                                                                                                                                                  execution_path
-                                                                                                                                                  )
+            if self.clustering_objective == 'max_diameter':
+                self.cluster_assignments, self.cluster_diameters, self.final_literals, self.sat_solution = self.solve_clustering_problem_max_diameter_loandra(self.dataset, 
+                                                                                                                                                    self.features, 
+                                                                                                                                                    self.k_clusters, 
+                                                                                                                                                    self.fixed_depth, 
+                                                                                                                                                    self.epsilon, 
+                                                                                                                                                    self.CL_pairs, 
+                                                                                                                                                    self.ML_pairs,
+                                                                                                                                                    loandra_path,
+                                                                                                                                                    execution_path
+                                                                                                                                                    )
+            else: # bicriteria
+                self.cluster_assignments, self.cluster_diameters, self.final_literals, self.sat_solution = self.solve_clustering_problem_bicriteria_loandra(self.dataset, 
+                                                                                                                                                    self.features, 
+                                                                                                                                                    self.k_clusters, 
+                                                                                                                                                    self.fixed_depth, 
+                                                                                                                                                    self.epsilon, 
+                                                                                                                                                    self.CL_pairs, 
+                                                                                                                                                    self.ML_pairs,
+                                                                                                                                                    loandra_path,
+                                                                                                                                                    execution_path
+                                                                                                                                                    )
+
  
     ##################################### Auxillary Helper Functions for User Interface #############################
 
