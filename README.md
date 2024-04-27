@@ -103,10 +103,19 @@ Please note that categorical feature tree modules have bene created for the min 
 ## Clustering Problems:
 
 1. clustering_advanced.py - This contains the encodings for interpretable constrained clustering using SAT Optimized Decsision trees.The SAT formulation follows the encodins proposed in P. Shati, E. Cohen, and S. McIlraith, “Optimal decision trees for interpretable clustering with constraints,” Proceedings of the Thirty-Second International Joint Conference on Artificial Intelligence, 2023. doi:10.24963/ijcai.2023/225
+2. clustering_minsplit.py - This contains the encodings for minimum split and maximum diameter bi-criteria optimization problem proposed in Shati et al.
 
-version 1.0.0 currently only supports Clustering objective - Minimize Maximum Diameter:
+version 1.1.0 currently supports Two Clustering objectives
+
+Minimize Maximum Diameter:
 
 <img width="494" alt="Screenshot 2024-03-23 at 3 15 21 AM" src="https://github.com/HarisRasul12/ESC499-Thesis-SAT-Trees/assets/66268214/6442428d-2e83-4933-8c78-806e880b80d0">
+
+Bicriteria Optimization (Max min split; Min max diameter) :
+
+<img width="494" alt="Screenshot 2024-03-23 at 3 15 21 AM" src="https://github.com/HarisRasul12/ESC499-Thesis-SAT-Trees/assets/66268214/6442428d-2e83-4933-8c78-806e880b80d0">
+
+<img width="360" alt="Screenshot 2024-04-27 at 3 00 53 PM" src="https://github.com/HarisRasul12/ESC499-Thesis-SAT-Trees/assets/66268214/6923b5c8-430b-4e85-a033-1c26444a5986">
 
 ## Constraint modules:
 ### Classification Constraints:
