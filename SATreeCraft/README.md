@@ -19,6 +19,7 @@
 - `Datareader.ipynb`: Performs classificationtests on all datasets, focused solely on classification problems.
 - `ExternalSolverSupport.ipynb`: Demonstrates how to integrate with the LOANDRA solver for advanced problem-solving.
 - `ComprehensiveTest.ipynb`: A comprehensive demo including data loading, model solution, and statistical analysis with clustering and classification
+- `Demo.ipynb`: A high level demo including data loading, model solution, classofocation and clustering using PySAT and LOANDRA solvers
 
 ## 3. DIMACS Files
 This directory contains `.dimac` files, which allow for the exporting of solutions to integrate with LOANDRA's solver system.
