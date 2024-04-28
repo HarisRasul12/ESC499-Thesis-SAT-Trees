@@ -691,19 +691,19 @@ class SATreeCraft:
        
         solution,cost = run_loandra_and_parse_results(loandra_path, execution_path)
         
-        a_matrix, s_matrix, z_matrix, g_matrix, x_i_c_matrix, bw_m_vector,bw_p_vector = create_literal_matrices_bicriteria(literals=literals,
-                                                                                                    solution=solution,
-                                                                                                    dataset_size=len(dataset),
-                                                                                                    k_clusters=k_clusters,
-                                                                                                    TB=TB,
-                                                                                                    TL=TL,
-                                                                                                    num_features=len(features),
-                                                                                                    distance_classes= distance_classes
-                                                                                                    )
+        a_matrix, s_matrix, z_matrix, g_matrix, x_i_c_matrix, bw_m_vector, bw_p_vector = create_literal_matrices_bicriteria(
+                                                                                                                            literals=literals,
+                                                                                                                            solution=solution,
+                                                                                                                            dataset_size=len(dataset),
+                                                                                                                            k_clusters=k_clusters,
+                                                                                                                            TB=TB,
+                                                                                                                            TL=TL,
+                                                                                                                            num_features=len(features),
+                                                                                                                            distance_classes= distance_classes
+                                                                                                                            )
         cluster_assignments, cluster_diameters = assign_clusters_and_diameters(x_i_c_matrix, dataset, k_clusters)
         if (len(self.features) <= 2):
             self.plot_and_save_clusters_to_drive(dataset, cluster_assignments, k_clusters)
-        
         return cluster_assignments, cluster_diameters, literals, solution  
 
 
@@ -769,6 +769,7 @@ class SATreeCraft:
                                                                                                                                                     execution_path
                                                                                                                                                     )
             else: # bicriteria
+                # print('solving bicriteria')
                 self.cluster_assignments, self.cluster_diameters, self.final_literals, self.sat_solution = self.solve_clustering_problem_bicriteria_loandra(self.dataset, 
                                                                                                                                                     self.features, 
                                                                                                                                                     self.k_clusters, 
