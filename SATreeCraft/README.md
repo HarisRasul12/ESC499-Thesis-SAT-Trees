@@ -29,7 +29,7 @@ This directory contains `.dimac` files, which allow for the exporting of solutio
 - It supports datasets with both categorical and numerical features.
 
 ## 4.5 Clustering Problems
-- This dircetory holds the modules for the encodings for clustering problem: Minimize Maximum Diameter as of now Release ver--1.0
+- This dircetory holds the modules for the encodings for clustering problems: Minimize Maximum Diameter , Bicriteria Optimization as of now Release ver--1.1
 
 ## 5. Images
 - Contains visualizations of decision trees, which can be generated using either PySAT or Loandra based on the user's input.
