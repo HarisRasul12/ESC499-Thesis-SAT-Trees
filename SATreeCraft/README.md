@@ -41,7 +41,8 @@ This directory contains `.dimac` files, which allow for the exporting of solutio
 Please ensure PySAT is installed (LOANDRA is optional)
 
 ## Usage
-Provide examples of how to use your project.
+
+<img width="1075" alt="Screenshot 2024-04-28 at 1 13 31 PM" src="https://github.com/HarisRasul12/ESC499-Thesis-SAT-Trees/assets/66268214/e583381b-a152-4bb3-8f9b-0afa077b56a8">
 
 ## Contributing
 Open Source Library for Classification and Reegression Trees
