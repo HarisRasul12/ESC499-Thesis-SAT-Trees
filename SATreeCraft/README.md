@@ -34,6 +34,14 @@ This directory contains `.dimac` files, which allow for the exporting of solutio
 ## 5. Images
 - Contains visualizations of decision trees, which can be generated using either PySAT or Loandra based on the user's input.
 
+### Classification
+
+<img width="530" alt="Screenshot 2024-04-28 at 1 16 28 PM" src="https://github.com/HarisRasul12/ESC499-Thesis-SAT-Trees/assets/66268214/32893e77-00ff-494e-abf7-240f6d689eef">
+
+### Clustering
+
+<img width="572" alt="Screenshot 2024-04-28 at 1 16 58 PM" src="https://github.com/HarisRasul12/ESC499-Thesis-SAT-Trees/assets/66268214/afa73a76-0db7-4b22-a4bc-a4fb9983755d">
+
 ## 6. Loandra Support
 - Includes subprocess code for interfacing with a locally installed version of Loandra via Python's `os` module and the command line interface.
 
