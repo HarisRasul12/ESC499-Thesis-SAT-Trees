@@ -204,7 +204,7 @@ def build_clauses_cluster_tree_MD_MS(literals, X, TB, TL, num_features, k_cluste
     
     # Clause 19: Ensure no cluster is empty by ensuring there's at least one data point in each cluster
     for c in range(k_clusters - 1):  # Iterate over all clusters except the last one
-        wcnf.append([literals[f'x_{c}_{c}']])
+        wcnf.append([-literals[f'x_{c}_{c}']])
     
     # Clause 20: If xi is not in cluster c, then there must be some xi' in cluster c-1, for all c < i
     for i in range(1,len(X)):  # We start from 1 to ensure there's at least one i' < i

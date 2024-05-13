@@ -289,7 +289,7 @@ def build_clauses_cluster_tree_MD(literals, X, TB, TL, num_features, k_clusters,
     for c in range(k_clusters - 1):  # Iterate over all clusters except the last one
         # Add a clause that states that there's at least one data point in cluster c
         # print("clause 19: ", [literals[f'x_{c}_{c}']])
-        wcnf.append([literals[f'x_{c}_{c}']])
+        wcnf.append([-literals[f'x_{c}_{c}']])
     
     # Clause 20: If xi is not in cluster c, then there must be some xi' in cluster c-1, for all c < i
     for i in range(1,len(X)):  # We start from 1 to ensure there's at least one i' < i
