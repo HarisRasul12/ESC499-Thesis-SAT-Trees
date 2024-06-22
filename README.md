@@ -117,6 +117,10 @@ Bicriteria Optimization (Max min split; Min max diameter) :
 
 <img width="360" alt="Screenshot 2024-04-27 at 3 00 53 PM" src="https://github.com/HarisRasul12/ESC499-Thesis-SAT-Trees/assets/66268214/6923b5c8-430b-4e85-a033-1c26444a5986">
 
+As of the most recent release we hae implemented the smart pairs algorithm to increase speed of computation should user wish to use it - by default not active, boolean parameter to enable/disable it.
+
+<img width="478" alt="Screenshot 2024-06-21 at 11 40 17 PM" src="https://github.com/HarisRasul12/ESC499-Thesis-SAT-Trees/assets/66268214/fe578d94-35b4-45f6-9cab-e7eb3f8878ad">
+
 ## Constraint modules:
 ### Classification Constraints:
 - additional_classification_constraints.py - contains cardinality constraint such as minimum support and other additional constraints user can put onto their tree constructor such as minimum margin.
