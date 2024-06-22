@@ -20,6 +20,7 @@ from classification_problems.additional_classification_constraints import *
 # clustering modules 
 from clustering_problems.clustering_advanced import *
 from clustering_problems.clustering_minsplit import *
+from clustering_problems.clustering_smartPairs import *
 
 # Loandra solver support 
 from loandra_support.loandra import *
@@ -50,7 +51,8 @@ class SATreeCraft:
 
     def __init__(self, dataset,features,labels = None, true_labels_for_points = None, features_numerical = None, features_categorical = None,
                  is_classification = True, classification_objective = 'min_height', fixed_depth = None, tree_structure = 'Complete', min_support = 0,
-                 min_margin = 1, k_clusters = None, clustering_objective = 'max_diameter', is_clustering = False, epsilon = 0, CL_pairs = np.array([]), ML_pairs = np.array([])
+                 min_margin = 1, k_clusters = None, clustering_objective = 'max_diameter', is_clustering = False, epsilon = 0, CL_pairs = np.array([]), ML_pairs = np.array([]),
+                 smart_pairs = False
                  ):
         
         """Initializes the SATreeCraft instance with provided dataset and configuration."""
@@ -82,6 +84,7 @@ class SATreeCraft:
         self.epsilon = epsilon
         self.CL_pairs = CL_pairs
         self.ML_pairs = ML_pairs
+        self.smart_pairs = smart_pairs
 
         # return types 
         self.tree_model = None
@@ -287,6 +290,7 @@ class SATreeCraft:
         tree_structure, TB, TL = build_complete_tree_clustering(depth)
         
         literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size,distance_classes)
+        
         wcnf = build_clauses_cluster_tree_MD(literals, dataset, TB, TL, num_features, k_clusters,
                                     CL_pairs, ML_pairs, distance_classes)
     
@@ -313,7 +317,12 @@ class SATreeCraft:
         tree_structure, TB, TL = build_complete_tree_clustering(depth)
         
         literals = create_literals_cluster_tree_bicriteria(TB, TL, features, k_clusters, dataset_size,distance_classes)
-        wcnf = build_clauses_cluster_tree_MD_MS(literals, dataset, TB, TL, num_features, k_clusters,
+       
+        if self.smart_pairs:
+            wcnf = build_clauses_cluster_tree_MD_MS_Smart_Pair(literals, dataset, TB, TL, num_features, k_clusters,
+                                    CL_pairs, ML_pairs, distance_classes)
+        else:
+            wcnf = build_clauses_cluster_tree_MD_MS(literals, dataset, TB, TL, num_features, k_clusters,
                                     CL_pairs, ML_pairs, distance_classes)
     
         solution = solve_wcnf_clustering(wcnf)
@@ -684,7 +693,12 @@ class SATreeCraft:
         tree_structure, TB, TL = build_complete_tree_clustering(depth)
         
         literals = create_literals_cluster_tree_bicriteria(TB, TL, features, k_clusters, dataset_size,distance_classes)
-        wcnf = build_clauses_cluster_tree_MD_MS(literals, dataset, TB, TL, num_features, k_clusters,
+        
+        if self.smart_pairs:
+            wcnf = build_clauses_cluster_tree_MD_MS_Smart_Pair(literals, dataset, TB, TL, num_features, k_clusters,
+                                    CL_pairs, ML_pairs, distance_classes)
+        else:
+            wcnf = build_clauses_cluster_tree_MD_MS(literals, dataset, TB, TL, num_features, k_clusters,
                                     CL_pairs, ML_pairs, distance_classes)
     
         wcnf.to_file(execution_path)
