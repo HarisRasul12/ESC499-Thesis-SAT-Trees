@@ -7,10 +7,10 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 
-from classification_problems.min_height_tree_module import *
-from classification_problems.fixed_height_tree_module import *
-from classification_problems.min_height_tree_categorical_module import *
-from classification_problems.fixed_height_tree_categorical_module import *
+from classification.min_height_tree_module import *
+from classification.fixed_height_tree_module import *
+from classification.min_height_tree_categorical_module import *
+from classification.fixed_height_tree_categorical_module import *
 
 
 class SATreeClassifier:

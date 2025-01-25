@@ -9,18 +9,18 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder
 import math
 # clasification modules 
-from classification_problems.min_height_tree_module import *
-from classification_problems.fixed_height_tree_module import *
-from classification_problems.min_height_tree_categorical_module import *
-from classification_problems.fixed_height_tree_categorical_module import *
+from classification.min_height_tree_module import *
+from classification.fixed_height_tree_module import *
+from classification.min_height_tree_categorical_module import *
+from classification.fixed_height_tree_categorical_module import *
 
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from classification_problems.additional_classification_constraints import *
+from classification.additional_classification_constraints import *
 
 # clustering modules 
-from clustering_problems.clustering_advanced import *
-from clustering_problems.clustering_minsplit import *
-from clustering_problems.clustering_smartPairs import *
+from clustering.clustering_advanced import *
+from clustering.clustering_minsplit import *
+from clustering.clustering_smartPairs import *
 
 # Loandra solver support 
 from loandra_support.loandra import *
