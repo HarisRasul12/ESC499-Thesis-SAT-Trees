@@ -252,120 +252,114 @@ class TreeDataLoaderWithCategorical:
                 mask[self.numerical_indices] = False  # Set the indices in x to False
                 self.features_categorical = self.features[mask]  # Y contains el
 
-def k_fold_tester(k, depth, dataset, true_labels_for_points, labels, features, features_categorical=None, features_numerical=None, complete_tree=True, min_support_level = 0,
-                  min_margin_level = 1):
-    '''
-    Inputs:
-    k - number of folds ; (int)
-    depth - fixed depth tree created ; (int)
-    splitrate - train test split wanted ; (float)
-    dataset: dataset X to create folds upon ; (np.ndarray)
-    true_labels_for_points: labels y assigned to each x_i datapoint of dataset X ; (np.ndarray)
-    labels: all potential labels for dataset X ; (np.ndarray)
-    features: all features represented by an index ; (np.ndarray)
-    features_categorical: Optional - required for categorical feature dataset ; default = None (np.ndarray)
-    features_numerical: Optional - required for numerical feature dataset ; default = None (np.ndarray)
-    complete_tree : boolean indicator to see if tree type of construction is complete or oblivious (currently only supports complete) ; (bool) 
 
-    Returns:
-    k_fold_array - np.ndarray of k length with all k runs of training accuracies
-    mean_accuracy - mean score of the array
-    '''
-    if complete_tree == True:
-        tree_structure = 'Complete'
-    else:
-        tree_structure = 'Oblivious'
+def k_fold_tester(
+    k,
+    depth,
+    dataset,
+    true_labels_for_points,
+    labels,
+    features,
+    features_categorical=None,
+    features_numerical=None,
+    complete_tree=True,
+    min_support_level=0,
+    min_margin_level=1,
+    loandra_path=None
+):
+    """
+    Performs k-fold cross-validation to train a SAT-based decision tree and measure accuracy.
 
+    If `loandra_path` is provided, uses the LOANDRA solver. Otherwise, defaults to
+    the built-in SAT solver in `SATreeCraft.solve()`.
 
+    Parameters
+    ----------
+    k : int
+        Number of folds for cross-validation.
+    depth : int
+        Fixed depth for the decision tree.
+    dataset : np.ndarray
+        Feature matrix (X). Each row corresponds to one data point.
+    true_labels_for_points : np.ndarray
+        Ground truth labels (y) for each row in `dataset`.
+    labels : np.ndarray
+        Array of all potential labels for the dataset.
+    features : np.ndarray
+        Array of feature names/indices used by the tree.
+    features_categorical : np.ndarray, optional
+        Indices/names of categorical features. Default is None.
+    features_numerical : np.ndarray, optional
+        Indices/names of numerical features. Default is None.
+    complete_tree : bool, optional
+        If True, uses a Complete (standard) tree structure;
+        if False, uses an Oblivious tree structure. Default is True.
+    min_support_level : int, optional
+        Minimum support constraint for leaves (default 0 means no constraint).
+    min_margin_level : int, optional
+        Minimum margin constraint (default 1 means no added margin).
+    loandra_path : str, optional
+        If provided, indicates the file path/location of the LOANDRA solver.
+        The decision tree is then constructed using `solve_loandra(loandra_path)`
+        instead of the default `.solve()` method. Default is None.
+
+    Returns
+    -------
+    k_accuracies : np.ndarray
+        Array of length k with training accuracies for each fold.
+    mean_score : float
+        Mean accuracy across all folds.
+
+    Notes
+    -----
+    - This function uses KFold from scikit-learn for cross-validation.
+    - If `loandra_path` is None, it defaults to the standard solver.
+    - If `loandra_path` is a valid path, LOANDRA integration is used.
+    """
+    from sklearn.model_selection import KFold
+    import numpy as np
+
+    # Determine tree structure type
+    tree_structure = 'Complete' if complete_tree else 'Oblivious'
+
+    # Prepare arrays for storing fold accuracies
     k_accuracies = []
     kf = KFold(n_splits=k, shuffle=True)
 
+    # Loop over the k folds
     for train_index, test_index in kf.split(dataset):
         X_train, X_test = dataset[train_index], dataset[test_index]
         y_train, y_test = true_labels_for_points[train_index], true_labels_for_points[test_index]
 
-        # Assuming SATreeCraft and SATreeClassifier are defined elsewhere and work similarly to scikit-learn models
-        # print(min_support_level)
-        max_accuracy_problem = SATreeCraft(dataset=X_train,
-                                           features=features,
-                                           labels=labels,
-                                           true_labels_for_points=y_train,
-                                           features_categorical=features_categorical,
-                                           features_numerical=features_numerical,
-                                           classification_objective='max_accuracy',
-                                           fixed_depth=depth,
-                                           min_support = min_support_level,
-                                           min_margin= min_margin_level,
-                                           tree_structure= tree_structure)
-        # build model
-        max_accuracy_problem.solve()
+        # Create a SATreeCraft instance
+        max_accuracy_problem = SATreeCraft(
+            dataset=X_train,
+            features=features,
+            labels=labels,
+            true_labels_for_points=y_train,
+            features_categorical=features_categorical,
+            features_numerical=features_numerical,
+            classification_objective='max_accuracy',
+            fixed_depth=depth,
+            min_support=min_support_level,
+            min_margin=min_margin_level,
+            tree_structure=tree_structure
+        )
+
+        # If LOANDRA path is provided, solve with LOANDRA; otherwise solve normally
+        if loandra_path is None:
+            max_accuracy_problem.solve()
+        else:
+            max_accuracy_problem.solve_loandra(loandra_path)
+
+        # Build the classifier from the resulting model
         model = SATreeClassifier(max_accuracy_problem.model)
-        
-        # score model on test data
-        k_accuracies.append(model.score(X_test, y_test))
-        print('Iteration complete')
+
+        # Evaluate on the test set
+        acc = model.score(X_test, y_test)
+        k_accuracies.append(acc)
+        print('Fold complete. Accuracy =', acc)
 
     k_accuracies = np.array(k_accuracies)
     mean_score = np.mean(k_accuracies)
-
-    return k_accuracies, mean_score
-
-def k_fold_tester_loandra(loandra_path,k, depth, dataset, true_labels_for_points, labels, features, features_categorical=None, features_numerical=None, complete_tree=True, min_support_level = 0,
-                  min_margin_level = 1):
-    '''
-    Inputs:
-    loandra_path - global location of loandra solver
-    execution_path - global location of hwre one wnats to create dimac files
-    k - number of folds ; (int)
-    depth - fixed depth tree created ; (int)
-    splitrate - train test split wanted ; (float)
-    dataset: dataset X to create folds upon ; (np.ndarray)
-    true_labels_for_points: labels y assigned to each x_i datapoint of dataset X ; (np.ndarray)
-    labels: all potential labels for dataset X ; (np.ndarray)
-    features: all features represented by an index ; (np.ndarray)
-    features_categorical: Optional - required for categorical feature dataset ; default = None (np.ndarray)
-    features_numerical: Optional - required for numerical feature dataset ; default = None (np.ndarray)
-    complete_tree : boolean indicator to see if tree type of construction is complete or oblivious (currently only supports complete) ; (bool) 
-
-    Returns:
-    k_fold_array - np.ndarray of k length with all k runs of training accuracies
-    mean_accuracy - mean score of the array
-    '''
-    if complete_tree == True:
-        tree_structure = 'Complete'
-    else:
-        tree_structure = 'Oblivious'
-
-
-    k_accuracies = []
-    kf = KFold(n_splits=k, shuffle=True)
-
-    for train_index, test_index in kf.split(dataset):
-        X_train, X_test = dataset[train_index], dataset[test_index]
-        y_train, y_test = true_labels_for_points[train_index], true_labels_for_points[test_index]
-
-        # Assuming SATreeCraft and SATreeClassifier are defined elsewhere and work similarly to scikit-learn models
-        # print(min_support_level)
-        max_accuracy_problem = SATreeCraft(dataset=X_train,
-                                           features=features,
-                                           labels=labels,
-                                           true_labels_for_points=y_train,
-                                           features_categorical=features_categorical,
-                                           features_numerical=features_numerical,
-                                           classification_objective='max_accuracy',
-                                           fixed_depth=depth,
-                                           min_support = min_support_level,
-                                           min_margin= min_margin_level,
-                                           tree_structure= tree_structure)
-        # build model
-        max_accuracy_problem.solve_loandra(loandra_path)
-        model = SATreeClassifier(max_accuracy_problem.model)
-        
-        # score model on test data
-        k_accuracies.append(model.score(X_test, y_test))
-        print('Iteration complete')
-
-    k_accuracies = np.array(k_accuracies)
-    mean_score = np.mean(k_accuracies)
-
     return k_accuracies, mean_score
