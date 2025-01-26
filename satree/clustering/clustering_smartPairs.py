@@ -1,22 +1,17 @@
-# Created by: Haris Rasul
-# Date: March 21 2024
-# Python script to build the complete tree and create literals
-# for a given depth and dataset. Will attempt to maximize the number of correct labels given to training dataset 
-# adding soft clauses for maximizing corrcet solution for a given depth and hard clauses 
+"""
+This module contains functions to solve the clustering problem using a minimum height tree
+with a maximum diameter and minimum split criteria.
 
-from pysat.formula import CNF
-from pysat.solvers import Solver
-from pysat.formula import WCNF
-from pysat.examples.rc2 import RC2
-from graphviz import Digraph
+Created by: Haris Rasul
+Date: March 21 2024
+"""
+
 import numpy as np
-from classification_problems.min_height_tree_module import *
-import math
-from itertools import combinations
-from collections import defaultdict, OrderedDict
 from scipy.spatial.distance import euclidean
-import matplotlib.pyplot as plt
-from clustering_problems.clustering_advanced import solve_wcnf_clustering, create_distance_classes, build_complete_tree_clustering, assign_clusters_and_diameters, plot_and_save_clusters 
+from pysat.formula import WCNF
+
+from satree.classification.min_height_tree_module import compute_ordering, get_ancestors
+from clustering_advanced import solve_wcnf_clustering, create_distance_classes, build_complete_tree_clustering, assign_clusters_and_diameters
 
 # Define the function to create literals based on the tree structure
 def create_literals_cluster_tree_bicriteria(TB, TL, F, k_clusters, dataset_size,distance_classes):

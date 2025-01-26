@@ -1,21 +1,21 @@
-# Created by: Haris Rasul
-# Date: March 21 2024
-# Python script to build the complete tree and create literals
-# for a given depth and dataset. Will attempt to maximize the number of correct labels given to training dataset 
-# adding soft clauses for maximizing corrcet solution for a given depth and hard clauses 
+"""
+Module for solving clustering problems using a complete binary tree and SAT solvers. This module contains functions
+to solve clustering problems using a complete binary tree and SAT solvers.
 
-from pysat.formula import CNF
-from pysat.solvers import Solver
+Created by: Haris Rasul
+Date: March 21 2024
+"""
+
+from itertools import combinations
+from collections import OrderedDict
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.spatial.distance import euclidean
 from pysat.formula import WCNF
 from pysat.examples.rc2 import RC2
-from graphviz import Digraph
-import numpy as np
-from classification_problems.min_height_tree_module import *
-import math
-from itertools import combinations
-from collections import defaultdict, OrderedDict
-from scipy.spatial.distance import euclidean
-import matplotlib.pyplot as plt
+
+from satree.classification.min_height_tree_module import compute_ordering, get_ancestors
 
 
 def create_distance_classes(dataset, epsilon=0):
