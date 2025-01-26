@@ -10,8 +10,7 @@ Date: March 4th, 2024
 from pysat.formula import WCNF
 from pysat.card import CardEnc, IDPool, EncType
 
-from fixed_height_tree_module import *
-from fixed_height_tree_categorical_module import *
+from min_height_tree_module import compute_ordering, get_ancestors
 
 
 def min_support(wcnf, literals, X, TL, min_support):
