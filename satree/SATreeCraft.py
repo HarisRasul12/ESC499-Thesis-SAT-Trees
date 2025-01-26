@@ -13,17 +13,18 @@ The library works with datasets containing both categorical and numerical featur
 import numpy as np
 import matplotlib.pyplot as plt
 
-from classification.min_height_tree_module import build_clauses, create_solution_matrix, add_thresholds, create_literals, solve_cnf, \
+from classification.min_height_tree_module import build_clauses, create_solution_matrix, add_thresholds, solve_cnf, \
     visualize_tree
-from satree.treemodder.builder import build_complete_tree
-from classification.fixed_height_tree_module import build_clauses_fixed_tree, create_literals_fixed_tree, solve_wcnf
+from satree.treemodder.builder import build_complete_tree, create_literals
+from classification.fixed_height_tree_module import build_clauses_fixed_tree, solve_wcnf
 from classification.min_height_tree_categorical_module import build_clauses_categorical, add_thresholds_categorical
 from classification.fixed_height_tree_categorical_module import build_clauses_categorical_fixed
 from classification.additional_classification_constraints import add_oblivious_tree_constraints, add_oblivious_tree_constraints2, min_support, build_clauses_fixed_tree_min_margin_constraint_add
 
-from clustering.clustering_advanced import create_literals_cluster_tree, build_clauses_cluster_tree_MD, create_literal_matrices, create_distance_classes, solve_wcnf_clustering, assign_clusters_and_diameters
+from clustering.clustering_advanced import build_clauses_cluster_tree_MD, create_literal_matrices, create_distance_classes, solve_wcnf_clustering, assign_clusters_and_diameters
 from clustering.clustering_minsplit import build_clauses_cluster_tree_MD_MS
-from clustering.clustering_smartPairs import create_literals_cluster_tree_bicriteria, build_clauses_cluster_tree_MD_MS_Smart_Pair, create_literal_matrices_bicriteria, WCNF
+from clustering.clustering_smartPairs import build_clauses_cluster_tree_MD_MS_Smart_Pair, create_literal_matrices_bicriteria, WCNF
+from satree.clustering.core import create_literals_cluster_tree
 
 from loandra_support.loandra import run_loandra_and_parse_results, transform_tree_from_loandra
 
@@ -109,7 +110,7 @@ class SATreeCraft:
 
         while solution == "No solution exists":
             tree, TB, TL = build_complete_tree(depth)
-            literals = create_literals(TB, TL, features, labels, len(dataset))
+            literals = create_literals(TB, TL, features, labels, len(dataset), False)[0]
             cnf = build_clauses_categorical(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels, true_labels_for_points)
 
             # Oblivious Tree Constraints addition if ever used 
@@ -138,7 +139,7 @@ class SATreeCraft:
         cost = None
 
         tree, TB, TL = build_complete_tree(depth)
-        literals = create_literals_fixed_tree(TB, TL, features, labels, len(dataset))
+        literals = create_literals(TB, TL, features, labels, len(dataset), True)[0]
 
         wcnf = build_clauses_categorical_fixed(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels,true_labels_for_points)
 
@@ -176,7 +177,7 @@ class SATreeCraft:
 
         while solution == "No solution exists":
             tree, TB, TL = build_complete_tree(depth)
-            literals = create_literals(TB, TL, features, labels, len(dataset))
+            literals = create_literals(TB, TL, features, labels, len(dataset), False)[0]
             cnf = build_clauses(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
             
             # Oblivious Tree Constraints addition if ever used 
@@ -206,7 +207,7 @@ class SATreeCraft:
         cost = None
 
         tree, TB, TL = build_complete_tree(depth)
-        literals = create_literals_fixed_tree(TB, TL, features, labels, len(dataset))
+        literals = create_literals(TB, TL, features, labels, len(dataset), True)[0]
 
         # min margin constraint - only for numerical problem 
         if (self.min_margin > 1):
@@ -301,7 +302,7 @@ class SATreeCraft:
         dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
         tree_structure, TB, TL = build_complete_tree(depth)
         
-        literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size,distance_classes)
+        literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size,distance_classes, False)
         
         wcnf = build_clauses_cluster_tree_MD(literals, dataset, TB, TL, num_features, k_clusters,
                                     CL_pairs, ML_pairs, distance_classes)
@@ -328,7 +329,7 @@ class SATreeCraft:
         dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
         tree_structure, TB, TL = build_complete_tree(depth)
         
-        literals = create_literals_cluster_tree_bicriteria(TB, TL, features, k_clusters, dataset_size,distance_classes)
+        literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size, distance_classes, True)
        
         if self.smart_pairs:
             wcnf = build_clauses_cluster_tree_MD_MS_Smart_Pair(literals, dataset, TB, TL, num_features, k_clusters,
@@ -457,7 +458,7 @@ class SATreeCraft:
                     literals = None
                     cost = None
                     tree, TB, TL = build_complete_tree(self.fixed_depth)
-                    literals = create_literals_fixed_tree(TB, TL, self.features, self.labels, len(self.dataset))
+                    literals = create_literals(TB, TL, self.features, self.labels, len(self.dataset), True)[0]
                     
                     if self.features_categorical is not None and len(self.features_categorical) > 0: # categorical feature dataset
                         wcnf = build_clauses_categorical_fixed(literals, self.dataset, TB, TL, len(self.features), 
@@ -484,7 +485,7 @@ class SATreeCraft:
                     tree = None
                     literals = None
                     tree, TB, TL = build_complete_tree(depth)
-                    literals = create_literals(TB, TL, self.features, self.labels, len(self.dataset))
+                    literals = create_literals(TB, TL, self.features, self.labels, len(self.dataset), False)[0]
 
                     if self.features_categorical is not None and len(self.features_categorical) > 0: # categorical feature dataset
                         cnf = build_clauses_categorical(literals, 
@@ -510,7 +511,7 @@ class SATreeCraft:
         cost = None
 
         tree, TB, TL = build_complete_tree(depth)
-        literals = create_literals_fixed_tree(TB, TL, features, labels, len(dataset))
+        literals = create_literals(TB, TL, features, labels, len(dataset), True)[0]
 
         # min margin constraint - only for numerical problem 
         if (self.min_margin > 1):
@@ -558,7 +559,7 @@ class SATreeCraft:
         cost = None
 
         tree, TB, TL = build_complete_tree(depth)
-        literals = create_literals_fixed_tree(TB, TL, features, labels, len(dataset))
+        literals = create_literals(TB, TL, features, labels, len(dataset), True)[0]
 
         wcnf = build_clauses_categorical_fixed(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels,true_labels_for_points)
 
@@ -597,7 +598,7 @@ class SATreeCraft:
 
         while solution == "No solution exists":
             tree, TB, TL = build_complete_tree(depth)
-            literals = create_literals(TB, TL, features, labels, len(dataset))
+            literals = create_literals(TB, TL, features, labels, len(dataset), False)[0]
             cnf = build_clauses(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
             
             # Oblivious Tree Constraints addition if ever used 
@@ -643,7 +644,7 @@ class SATreeCraft:
 
         while solution == "No solution exists":
             tree, TB, TL = build_complete_tree(depth)
-            literals = create_literals(TB, TL, features, labels, len(dataset))
+            literals = create_literals(TB, TL, features, labels, len(dataset), False)[0]
             cnf = build_clauses_categorical(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels, true_labels_for_points)
 
             # Oblivious Tree Constraints addition if ever used 
@@ -682,7 +683,7 @@ class SATreeCraft:
         dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
         tree_structure, TB, TL = build_complete_tree(depth)
         
-        literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size,distance_classes)
+        literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size, distance_classes, False)
         wcnf = build_clauses_cluster_tree_MD(literals, dataset, TB, TL, num_features, k_clusters,
                                     CL_pairs, ML_pairs, distance_classes)
     
@@ -712,7 +713,7 @@ class SATreeCraft:
         dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
         tree_structure, TB, TL = build_complete_tree(depth)
         
-        literals = create_literals_cluster_tree_bicriteria(TB, TL, features, k_clusters, dataset_size,distance_classes)
+        literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size, distance_classes, True)
         
         if self.smart_pairs:
             wcnf = build_clauses_cluster_tree_MD_MS_Smart_Pair(literals, dataset, TB, TL, num_features, k_clusters,

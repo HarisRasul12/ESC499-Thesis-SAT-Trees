@@ -7,8 +7,8 @@ Base module to help solve SAT problems with categorical and numerical features.
 import numpy as np
 from pysat.formula import CNF
 
-from min_height_tree_module import get_ancestors, create_literals, solve_cnf, visualize_tree
-from satree.treemodder.builder import build_complete_tree
+from min_height_tree_module import get_ancestors, solve_cnf, visualize_tree
+from satree.treemodder.builder import build_complete_tree, create_literals
 
 
 # Helper function to sort data points by feature and create O_j FOR CATGEORICAL 
@@ -187,7 +187,7 @@ def find_min_depth_tree_categorical(features, features_categorical, features_num
 
     while solution == "No solution exists":
         tree, TB, TL = build_complete_tree(depth)
-        literals = create_literals(TB, TL, features, labels, len(dataset))
+        literals = create_literals(TB, TL, features, labels, len(dataset), False)[0]
         cnf = build_clauses_categorical(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels, true_labels_for_points)
         solution = solve_cnf(cnf, literals, TL, tree, labels, features, dataset)
         

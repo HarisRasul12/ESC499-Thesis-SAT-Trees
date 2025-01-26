@@ -10,62 +10,8 @@ from graphviz import Digraph
 from pysat.formula import CNF
 from pysat.solvers import Solver
 
-from satree.treemodder.builder import build_complete_tree
+from satree.treemodder.builder import build_complete_tree, create_literals
 
-
-# Define the function to build a complete tree of a given depth
-
-
-# Define the function to create literals based on the tree structure
-def create_literals(TB, TL, F, C, dataset_size):
-    """
-    Create the literals for the SAT solver based on the tree structure and dataset size.
-
-    This function creates four types of literals:
-    - 'a' literals for feature splits at branching nodes,
-    - 's' literals for data points directed to left or right,
-    - 'z' literals for data points that end up at a leaf node,
-    - 'g' literals for assigning class labels to leaf nodes.
-
-    Parameters:
-    - TB (list): Indices of branching nodes in the tree.
-    - TL (list): Indices of leaf nodes in the tree.
-    - num_features (int): The number of features in the dataset.
-    - labels (list): The list of class labels for the dataset.
-    - dataset_size (int): The number of data points in the dataset.
-
-    Returns:
-    - literals (dict): A dictionary where keys are literal names and values are their corresponding indices for the SAT solver.
-    """
-
-    literals = {}
-    current_index = 1
-
-    # Create 'a' literals for feature splits at branching nodes
-    for t in TB:
-        for j in F:
-            literals[f'a_{t}_{j}'] = current_index
-            current_index += 1
-
-    # Create 's' literals for data points directed left or right at branching nodes
-    for i in range(dataset_size):
-        for t in TB:
-            literals[f's_{i}_{t}'] = current_index
-            current_index += 1
-
-    # Create 'z' literals for data points ending up at leaf nodes
-    for i in range(dataset_size):
-        for t in TL:
-            literals[f'z_{i}_{t}'] = current_index
-            current_index += 1
-
-    # Create 'g' literals for labels at leaf nodes
-    for t in TL:
-        for c in C:
-            literals[f'g_{t}_{c}'] = current_index
-            current_index += 1
-
-    return literals
 
 def get_ancestors(node_index, side):
     """
@@ -353,7 +299,7 @@ def find_min_depth_tree(features, labels, true_labels_for_points, dataset):
 
     while solution == "No solution exists":
         tree, TB, TL = build_complete_tree(depth)
-        literals = create_literals(TB, TL, features, labels, len(dataset))
+        literals = create_literals(TB, TL, features, labels, len(dataset), False)[0]
         cnf = build_clauses(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
         solution = solve_cnf(cnf, literals, TL, tree, labels, features, dataset)
         

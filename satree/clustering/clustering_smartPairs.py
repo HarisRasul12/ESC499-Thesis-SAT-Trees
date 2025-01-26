@@ -9,82 +9,11 @@ import numpy as np
 from scipy.spatial.distance import euclidean
 from pysat.formula import WCNF
 
+from satree.clustering.core import create_literals_cluster_tree
 from satree.treemodder.builder import build_complete_tree
 from satree.classification.min_height_tree_module import compute_ordering, get_ancestors
-from clustering_advanced import solve_wcnf_clustering, create_distance_classes, assign_clusters_and_diameters
+from satree.clustering.clustering_advanced import solve_wcnf_clustering, create_distance_classes, assign_clusters_and_diameters
 
-# Define the function to create literals based on the tree structure
-def create_literals_cluster_tree_bicriteria(TB, TL, F, k_clusters, dataset_size,distance_classes):
-    """
-    Create the literals for the SAT solver based on the tree structure and dataset size.
-
-    This function creates four types of literals:
-    - 'a' literals for feature splits at branching nodes,
-    - 's' literals for data points directed to left or right,
-    - 'z' literals for data points that end up at a leaf node,
-    - 'g' literals for assigning class labels to leaf nodes.
-    - 'x' The cluster assigned to point 𝑖 is or comes after 𝑐lass label c
-    - 'bw_p' The pairs in class 𝑤 should be clustered together
-    - 'bw_m' (The negation of) whether the pairs in distance class 𝑤 should be clustered separately
-
-    Parameters:
-    - TB (list): Indices of branching nodes in the tree.
-    - TL (list): Indices of leaf nodes in the tree.
-    - F (list): The array of features
-    - k_clusters (int) - based on clusters , so we need to turn this into arrat: eg C= k_clusters, C =2, C-> [0,1], turn into list of cluster ids
-    - dataset_size (int): The number of data points in the dataset.
-    - data_classes 
-
-
-    Returns:
-    - literals (dict): A dictionary where keys are literal names and values are their corresponding indices for the SAT solver.
-    """
-    C = list(range(k_clusters))  # List of cluster IDs
-    literals = {}
-    current_index = 1
-
-    # Create 'a' literals for feature splits at branching nodes
-    for t in TB:
-        for j in F:
-            literals[f'a_{t}_{j}'] = current_index
-            current_index += 1
-
-    # Create 's' literals for data points directed left or right at branching nodes
-    for i in range(dataset_size):
-        for t in TB:
-            literals[f's_{i}_{t}'] = current_index
-            current_index += 1
-
-    # Create 'z' literals for data points ending up at leaf nodes
-    for i in range(dataset_size):
-        for t in TL:
-            literals[f'z_{i}_{t}'] = current_index
-            current_index += 1
-
-    # Create 'g' literals for clusters at leaf nodes
-    for t in TL:
-        for c in C:
-            literals[f'g_{t}_{c}'] = current_index
-            current_index += 1
-
-    # Create 'x' The cluster assigned to point 𝑖 is or comes after 𝑐
-    for i in range(dataset_size):
-        for c in C:
-            literals[f'x_{i}_{c}'] = current_index
-            current_index += 1
-    
-    # Create 'bw_m' literals (points in class w should NOT be clustered together)
-    for w, pairs in enumerate(distance_classes):  # data_classes is a list of numpy arrays
-        literals[f'bw_m_{w}'] = current_index
-        current_index += 1
-
-    # Create 'bw_p' literals (points in class w should be clustered together)
-    for w, pairs in enumerate(distance_classes):
-        literals[f'bw_p_{w}'] = current_index
-        current_index += 1
-
-    return literals
-    
 
 def build_clauses_cluster_tree_MD_MS_Smart_Pair(literals, X, TB, TL, num_features, k_clusters, CL_pairs, ML_pairs, distance_classes):
     """
@@ -428,7 +357,7 @@ def min_split_clustering_problem_SmartPair(dataset,features,k_clusters, depth, e
     num_features = len(features)
     dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
     tree_structure, TB, TL = build_complete_tree(depth)
-    literals = create_literals_cluster_tree_bicriteria(TB, TL, features, k_clusters, dataset_size,distance_classes)
+    literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size, distance_classes, True)
     wcnf = build_clauses_cluster_tree_MD_MS_Smart_Pair(literals, dataset, TB, TL, num_features, k_clusters,
                                   CL_pairs, ML_pairs, distance_classes)
     
@@ -496,7 +425,7 @@ def min_split_clustering_problem_SmartPair(dataset,features,k_clusters, depth, e
 #     # tree_structure, TB, TL = build_complete_tree_clustering(depth)
 #     # # print(tree_structure)
     
-#     # literals = create_literals_cluster_tree(TB, TL, F, k_clusters, dataset_size,distance_classes)
+#     # literals = create_literals_cluster_tree(TB, TL, F, k_clusters, dataset_size,distance_classes, False)
 #     # print("\nliterals map: ")
 #     # for key, value in literals.items():
 #     #     print(f'{key}: {value}')

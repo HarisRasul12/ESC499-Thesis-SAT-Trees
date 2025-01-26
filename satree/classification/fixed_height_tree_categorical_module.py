@@ -7,9 +7,9 @@ Module for computing the maximum accuracy of fixed-height trees with categorical
 from pysat.formula import WCNF
 
 from min_height_tree_categorical_module import compute_ordering_with_categorical, add_thresholds_categorical
-from fixed_height_tree_module import create_literals_fixed_tree, solve_wcnf
+from fixed_height_tree_module import solve_wcnf
 from min_height_tree_module import get_ancestors, visualize_tree
-from satree.treemodder.builder import build_complete_tree
+from satree.treemodder.builder import build_complete_tree, create_literals
 
 
 def build_clauses_categorical_fixed(literals, X, TB, TL, num_features, features_categorical, features_numerical, labels,true_labels):
@@ -132,7 +132,7 @@ def find_fixed_depth_tree_categorical(features, features_categorical, features_n
     cost = None
 
     tree, TB, TL = build_complete_tree(depth)
-    literals = create_literals_fixed_tree(TB, TL, features, labels, len(dataset))
+    literals = create_literals(TB, TL, features, labels, len(dataset), True)[0]
     wcnf = build_clauses_categorical_fixed(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels,true_labels_for_points)
     solution,cost = solve_wcnf(wcnf, literals, TL, tree, labels, features, dataset)
     
