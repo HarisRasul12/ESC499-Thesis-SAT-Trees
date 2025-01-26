@@ -1,7 +1,11 @@
-# Created by: Haris Rasul
-# Date: December 22nd 2023
-# Python script to convert datasets into proper formats for inputting into tree creation
-# Includes data loaders, sklearn frameworks data preporcessing in rder to feed into tree methods.
+"""
+Module to convert datasets into proper formats for inputting into tree creation.
+
+This module includes data loaders and preprocessing utilities using sklearn frameworks to prepare datasets for tree-based methods.
+
+Created by: Haris Rasul
+Date: December 22nd, 2023
+"""
 
 import numpy as np
 import pandas as pd
@@ -316,8 +320,6 @@ def k_fold_tester(
     - If `loandra_path` is None, it defaults to the standard solver.
     - If `loandra_path` is a valid path, LOANDRA integration is used.
     """
-    from sklearn.model_selection import KFold
-    import numpy as np
 
     # Determine tree structure type
     tree_structure = 'Complete' if complete_tree else 'Oblivious'
