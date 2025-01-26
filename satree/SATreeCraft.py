@@ -1,4 +1,6 @@
 """
+=========== Module Description ===========
+
 SATreeCraft Python Library for user-oriented approach.
 
 This library provides tools for solving classification problems using SAT-based decision trees. It supports two classification objectives:
@@ -6,21 +8,20 @@ This library provides tools for solving classification problems using SAT-based 
 2. Maximum accuracy given a fixed depth.
 
 The library works with datasets containing both categorical and numerical features.
-
-Created by: Haris Rasul
-Date: Feb 20th, 2024
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-from classification.min_height_tree_module import build_clauses, create_solution_matrix, add_thresholds, create_literals, solve_cnf, build_complete_tree, visualize_tree
+from classification.min_height_tree_module import build_clauses, create_solution_matrix, add_thresholds, create_literals, solve_cnf, \
+    visualize_tree
+from satree.treemodder.builder import build_complete_tree
 from classification.fixed_height_tree_module import build_clauses_fixed_tree, create_literals_fixed_tree, solve_wcnf
 from classification.min_height_tree_categorical_module import build_clauses_categorical, add_thresholds_categorical
 from classification.fixed_height_tree_categorical_module import build_clauses_categorical_fixed
 from classification.additional_classification_constraints import add_oblivious_tree_constraints, add_oblivious_tree_constraints2, min_support, build_clauses_fixed_tree_min_margin_constraint_add
 
-from clustering.clustering_advanced import create_literals_cluster_tree, build_clauses_cluster_tree_MD, create_literal_matrices, create_distance_classes,  build_complete_tree_clustering, solve_wcnf_clustering, assign_clusters_and_diameters
+from clustering.clustering_advanced import create_literals_cluster_tree, build_clauses_cluster_tree_MD, create_literal_matrices, create_distance_classes, solve_wcnf_clustering, assign_clusters_and_diameters
 from clustering.clustering_minsplit import build_clauses_cluster_tree_MD_MS
 from clustering.clustering_smartPairs import create_literals_cluster_tree_bicriteria, build_clauses_cluster_tree_MD_MS_Smart_Pair, create_literal_matrices_bicriteria, WCNF
 
@@ -298,7 +299,7 @@ class SATreeCraft:
         dataset_size = len(dataset)
         num_features = len(features)
         dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
-        tree_structure, TB, TL = build_complete_tree_clustering(depth)
+        tree_structure, TB, TL = build_complete_tree(depth)
         
         literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size,distance_classes)
         
@@ -325,7 +326,7 @@ class SATreeCraft:
         dataset_size = len(dataset)
         num_features = len(features)
         dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
-        tree_structure, TB, TL = build_complete_tree_clustering(depth)
+        tree_structure, TB, TL = build_complete_tree(depth)
         
         literals = create_literals_cluster_tree_bicriteria(TB, TL, features, k_clusters, dataset_size,distance_classes)
        
@@ -679,7 +680,7 @@ class SATreeCraft:
         dataset_size = len(dataset)
         num_features = len(features)
         dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
-        tree_structure, TB, TL = build_complete_tree_clustering(depth)
+        tree_structure, TB, TL = build_complete_tree(depth)
         
         literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size,distance_classes)
         wcnf = build_clauses_cluster_tree_MD(literals, dataset, TB, TL, num_features, k_clusters,
@@ -709,7 +710,7 @@ class SATreeCraft:
         dataset_size = len(dataset)
         num_features = len(features)
         dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
-        tree_structure, TB, TL = build_complete_tree_clustering(depth)
+        tree_structure, TB, TL = build_complete_tree(depth)
         
         literals = create_literals_cluster_tree_bicriteria(TB, TL, features, k_clusters, dataset_size,distance_classes)
         

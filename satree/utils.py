@@ -1,10 +1,8 @@
 """
-Module to convert datasets into proper formats for inputting into tree creation.
+=========== Module Description ===========
 
-This module includes data loaders and preprocessing utilities using sklearn frameworks to prepare datasets for tree-based methods.
-
-Created by: Haris Rasul
-Date: December 22nd, 2023
+Module to convert datasets into proper formats for inputting into tree creation. This module includes data loaders and
+preprocessing utilities using sklearn frameworks to prepare datasets for tree-based methods.
 """
 
 import numpy as np

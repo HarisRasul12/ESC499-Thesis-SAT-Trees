@@ -1,10 +1,8 @@
 """
-Module to build the complete minimum depth tree and create literals.
+=========== Module Description ===========
 
-This module includes a modified decoded threshold compared to the original paper and should be tested on test accuracy later.
-
-Created by: Haris Rasul
-Date: December 22nd, 2023
+Module to build the complete minimum depth tree and create literals. This module includes a modified decoded threshold
+compared to the original paper and should be tested on test accuracy later.
 """
 
 import numpy as np
@@ -12,39 +10,10 @@ from graphviz import Digraph
 from pysat.formula import CNF
 from pysat.solvers import Solver
 
+from satree.treemodder.builder import build_complete_tree
+
+
 # Define the function to build a complete tree of a given depth
-def build_complete_tree(depth):
-    """
-    Construct a complete binary tree of a specified depth with feature and threshold values for branching nodes.
-
-    Parameters:
-    - depth (int): The depth of the tree, with the root node at depth 0.
-
-    Returns:
-    - tree_structure (list): A list where each element represents a node in the tree.
-    - TB (list): The indices of the branching nodes within the tree list.
-    - TL (list): The indices of the leaf nodes within the tree list.
-    """
-    num_nodes = (2 ** (depth + 1)) - 1
-    tree_structure = [None] * num_nodes
-    TB, TL = [], []
-
-    for node in range(num_nodes):
-        if node < ((2 ** depth) - 1):
-            TB.append(node)
-            # Include feature and threshold keys for branching nodes
-            tree_structure[node] = {
-                'type': 'branching', 
-                'children': [2 * node + 1, 2 * node + 2], 
-                'feature': None, 
-                'threshold': None
-            }
-        else:
-            TL.append(node)
-            tree_structure[node] = {'type': 'leaf', 'label': None}
-    
-    return tree_structure, TB, TL
-
 
 
 # Define the function to create literals based on the tree structure

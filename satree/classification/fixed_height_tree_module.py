@@ -1,16 +1,16 @@
 """
-Module to build the complete tree and create literals for a given depth and dataset.
+=========== Module Description ===========
 
-This module attempts to maximize the number of correct labels given to the training dataset by adding soft clauses for maximizing correct solutions and hard clauses for the constraints.
-
-Created by: Haris Rasul
-Date: November 19th, 2023
+Module to build the complete tree and create literals for a given depth and dataset. This module attempts to maximize
+the number of correct labels given to the training dataset by adding soft clauses for maximizing correct solutions and
+hard clauses for the constraints.
 """
 
 from pysat.formula import WCNF
 from pysat.examples.rc2 import RC2
 
-from min_height_tree_module import build_complete_tree, get_ancestors, compute_ordering, set_branch_node_features, add_thresholds, visualize_tree
+from min_height_tree_module import get_ancestors, compute_ordering, set_branch_node_features, add_thresholds, visualize_tree
+from satree.treemodder.builder import build_complete_tree
 
 
 # Define the function to create literals based on the tree structure

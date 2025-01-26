@@ -1,10 +1,9 @@
 """
+=========== Module Description ===========
+
 The main function in this module is `run_loandra_and_parse_results`, which executes the Loandra MaxSAT solver on a
 given CNF file and parses the results. The function takes the path to the Loandra executable and the path to the CNF
 file as input and returns the minimum cost and the model solution.
-
-Created by: Haris Rasul
-Date: March 16 2024
 """
 
 import os

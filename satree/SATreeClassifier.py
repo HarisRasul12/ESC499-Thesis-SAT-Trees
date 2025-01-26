@@ -1,9 +1,8 @@
 """
+=========== Module Description ===========
+
 SAT Tree model classifier. This module provides a classifier that uses a pre-built decision tree to make predictions
 and evaluate performance. The tree is based on the SAT solution for the training dataset.
-
-Created by: Haris Rasul
-Date: Feb 20th, 2024
 """
 
 import numpy as np

@@ -1,14 +1,14 @@
 """
-Base module to help solve SAT problems with categorical and numerical features.
+=========== Module Description ===========
 
-Created by: Haris Rasul
-Date: December 27, 2023
+Base module to help solve SAT problems with categorical and numerical features.
 """
 
 import numpy as np
 from pysat.formula import CNF
 
-from min_height_tree_module import get_ancestors, build_complete_tree, create_literals, solve_cnf, visualize_tree
+from min_height_tree_module import get_ancestors, create_literals, solve_cnf, visualize_tree
+from satree.treemodder.builder import build_complete_tree
 
 
 # Helper function to sort data points by feature and create O_j FOR CATGEORICAL 

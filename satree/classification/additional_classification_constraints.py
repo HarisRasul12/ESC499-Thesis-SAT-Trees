@@ -1,10 +1,9 @@
 """
-Module to add additional user constraints such as pairwise and cardinality constraints (minimum support and minimum margin) for a given depth and dataset.
+=========== Module Description ===========
 
-This module attempts to maximize the number of correct labels given to the training dataset by adding soft clauses for maximizing correct solutions and hard clauses for the constraints.
-
-Created by: Haris Rasul
-Date: March 4th, 2024
+Module to add additional user constraints such as pairwise and cardinality constraints (minimum support and
+minimum margin) for a given depth and dataset. This module attempts to maximize the number of correct labels given
+to the training dataset by adding soft clauses for maximizing correct solutions and hard clauses for the constraints.
 """
 
 from pysat.formula import WCNF

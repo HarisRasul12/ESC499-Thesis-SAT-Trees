@@ -1,15 +1,15 @@
 """
-Module for computing the maximum accuracy of fixed-height trees with categorical features at a given depth.
+=========== Module Description ===========
 
-Created by: Haris Rasul
-Date: December 28, 2023
+Module for computing the maximum accuracy of fixed-height trees with categorical features at a given depth.
 """
 
 from pysat.formula import WCNF
 
 from min_height_tree_categorical_module import compute_ordering_with_categorical, add_thresholds_categorical
 from fixed_height_tree_module import create_literals_fixed_tree, solve_wcnf
-from min_height_tree_module import get_ancestors, build_complete_tree, visualize_tree
+from min_height_tree_module import get_ancestors, visualize_tree
+from satree.treemodder.builder import build_complete_tree
 
 
 def build_clauses_categorical_fixed(literals, X, TB, TL, num_features, features_categorical, features_numerical, labels,true_labels):

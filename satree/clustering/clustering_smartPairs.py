@@ -1,17 +1,17 @@
 """
-This module contains functions to solve the clustering problem using a minimum height tree
-with a maximum diameter and minimum split criteria.
+=========== Module Description ===========
 
-Created by: Haris Rasul
-Date: March 21 2024
+This module contains functions to solve the clustering problem using a minimum height tree with a maximum diameter and
+minimum split criteria.
 """
 
 import numpy as np
 from scipy.spatial.distance import euclidean
 from pysat.formula import WCNF
 
+from satree.treemodder.builder import build_complete_tree
 from satree.classification.min_height_tree_module import compute_ordering, get_ancestors
-from clustering_advanced import solve_wcnf_clustering, create_distance_classes, build_complete_tree_clustering, assign_clusters_and_diameters
+from clustering_advanced import solve_wcnf_clustering, create_distance_classes, assign_clusters_and_diameters
 
 # Define the function to create literals based on the tree structure
 def create_literals_cluster_tree_bicriteria(TB, TL, F, k_clusters, dataset_size,distance_classes):
@@ -427,7 +427,7 @@ def min_split_clustering_problem_SmartPair(dataset,features,k_clusters, depth, e
     dataset_size = len(dataset)
     num_features = len(features)
     dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
-    tree_structure, TB, TL = build_complete_tree_clustering(depth)
+    tree_structure, TB, TL = build_complete_tree(depth)
     literals = create_literals_cluster_tree_bicriteria(TB, TL, features, k_clusters, dataset_size,distance_classes)
     wcnf = build_clauses_cluster_tree_MD_MS_Smart_Pair(literals, dataset, TB, TL, num_features, k_clusters,
                                   CL_pairs, ML_pairs, distance_classes)

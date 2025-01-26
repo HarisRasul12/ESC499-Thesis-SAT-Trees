@@ -1,9 +1,8 @@
 """
+=========== Module Description ===========
+
 Module for solving clustering problems using a complete binary tree and SAT solvers. This module contains functions
 to solve clustering problems using a complete binary tree and SAT solvers.
-
-Created by: Haris Rasul
-Date: March 21 2024
 """
 
 from itertools import combinations
@@ -15,6 +14,7 @@ from scipy.spatial.distance import euclidean
 from pysat.formula import WCNF
 from pysat.examples.rc2 import RC2
 
+from satree.treemodder.builder import build_complete_tree
 from satree.classification.min_height_tree_module import compute_ordering, get_ancestors
 
 
@@ -65,39 +65,6 @@ def create_distance_classes(dataset, epsilon=0):
     
     return distance_classes_with_dist, distance_classes_simplified, distance_classes
     
-
-def build_complete_tree_clustering(depth):
-    """
-    Construct a complete binary tree of a specified depth with feature and threshold values for branching nodes.
-
-    Parameters:
-    - depth (int): The depth of the tree, with the root node at depth 0.
-
-    Returns:
-    - tree_structure (list): A list where each element represents a node in the tree.
-    - TB (list): The indices of the branching nodes within the tree list.
-    - TL (list): The indices of the leaf nodes within the tree list.
-    """
-    num_nodes = (2 ** (depth + 1)) - 1
-    tree_structure = [None] * num_nodes
-    TB, TL = [], []
-
-    for node in range(num_nodes):
-        if node < ((2 ** depth) - 1):
-            TB.append(node)
-            # Include feature and threshold keys for branching nodes
-            tree_structure[node] = {
-                'type': 'branching', 
-                'children': [2 * node + 1, 2 * node + 2], 
-                'feature': None, 
-                'threshold': None
-            }
-        else:
-            TL.append(node)
-            tree_structure[node] = {'type': 'leaf', 'label': None}
-    
-    return tree_structure, TB, TL
-
 # Define the function to create literals based on the tree structure
 def create_literals_cluster_tree(TB, TL, F, k_clusters, dataset_size,distance_classes):
     """
@@ -579,7 +546,7 @@ def clustering_problem(dataset,features,k_clusters, depth, epsilon = 0, CL_pairs
     dataset_size = len(dataset)
     num_features = len(features)
     dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
-    tree_structure, TB, TL = build_complete_tree_clustering(depth)
+    tree_structure, TB, TL = build_complete_tree(depth)
     literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size,distance_classes)
     wcnf = build_clauses_cluster_tree_MD(literals, dataset, TB, TL, num_features, k_clusters,
                                   CL_pairs, ML_pairs, distance_classes)
