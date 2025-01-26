@@ -1,15 +1,15 @@
-# Created by: Haris Rasul
-# Date: December 28 2023
-# Python script module for computing fixed height trees max accuacy given fixed depth  with categorical features 
+"""
+Module for computing the maximum accuracy of fixed-height trees with categorical features at a given depth.
 
-from pysat.formula import CNF
-from pysat.solvers import Solver
+Created by: Haris Rasul
+Date: December 28, 2023
+"""
+
 from pysat.formula import WCNF
-from pysat.examples.rc2 import RC2
-from graphviz import Digraph
-import numpy as np
-from classification_problems.min_height_tree_categorical_module import *
-from classification_problems.fixed_height_tree_module import create_literals_fixed_tree, solve_wcnf
+
+from min_height_tree_categorical_module import compute_ordering_with_categorical, add_thresholds_categorical
+from fixed_height_tree_module import create_literals_fixed_tree, solve_wcnf
+from min_height_tree_module import get_ancestors, build_complete_tree, visualize_tree
 
 
 def build_clauses_categorical_fixed(literals, X, TB, TL, num_features, features_categorical, features_numerical, labels,true_labels):

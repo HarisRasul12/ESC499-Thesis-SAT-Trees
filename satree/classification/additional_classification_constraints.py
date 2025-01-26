@@ -1,19 +1,18 @@
-# Created by: Haris Rasul
-# Date: Macrh 4th  2024
-# Python script to add on additional user constraints of their choice form pairwise and cardinality constraints such as minimum support and miniumum margin 
-# for a given depth and dataset. Will attempt to maximize the number of correct labels given to training dataset 
-# adding soft clauses for maximizing corrcet solution for a given depth and hard clauses 
+"""
+Module to add additional user constraints such as pairwise and cardinality constraints (minimum support and minimum margin) for a given depth and dataset.
 
-from pysat.formula import CNF
-from pysat.solvers import Solver
+This module attempts to maximize the number of correct labels given to the training dataset by adding soft clauses for maximizing correct solutions and hard clauses for the constraints.
+
+Created by: Haris Rasul
+Date: March 4th, 2024
+"""
+
 from pysat.formula import WCNF
-from pysat.examples.rc2 import RC2
-from graphviz import Digraph
-import numpy as np
-from classification_problems.fixed_height_tree_module import *
-from classification_problems.fixed_height_tree_categorical_module import *
-
 from pysat.card import CardEnc, IDPool, EncType
+
+from fixed_height_tree_module import *
+from fixed_height_tree_categorical_module import *
+
 
 def min_support(wcnf, literals, X, TL, min_support):
     """

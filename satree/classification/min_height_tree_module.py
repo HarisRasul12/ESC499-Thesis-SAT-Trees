@@ -1,12 +1,16 @@
-# Created by: Haris Rasul
-# Date: December 22th 2023
-# Python script to build the complete min depth tree and create literals
-# This has a modeified dceoded threhold vs orginal paper - should test on test cacuracy later!!
+"""
+Module to build the complete minimum depth tree and create literals.
 
+This module includes a modified decoded threshold compared to the original paper and should be tested on test accuracy later.
+
+Created by: Haris Rasul
+Date: December 22nd, 2023
+"""
+
+import numpy as np
+from graphviz import Digraph
 from pysat.formula import CNF
 from pysat.solvers import Solver
-from graphviz import Digraph
-import numpy as np
 
 # Define the function to build a complete tree of a given depth
 def build_complete_tree(depth):

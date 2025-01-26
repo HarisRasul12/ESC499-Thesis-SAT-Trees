@@ -1,12 +1,15 @@
-# Created by: Haris Rasul
-# Date: December 27 2023
-# Python script base to help solve SAT Problems Categorical features with numerical features
+"""
+Base module to help solve SAT problems with categorical and numerical features.
 
-from pysat.formula import CNF
-from pysat.solvers import Solver
-from graphviz import Digraph
+Created by: Haris Rasul
+Date: December 27, 2023
+"""
+
 import numpy as np
-from classification_problems.min_height_tree_module import get_ancestors, build_complete_tree, create_literals, solve_cnf, visualize_tree
+from pysat.formula import CNF
+
+from min_height_tree_module import get_ancestors, build_complete_tree, create_literals, solve_cnf, visualize_tree
+
 
 # Helper function to sort data points by feature and create O_j FOR CATGEORICAL 
 def compute_ordering_with_categorical(X, feature_index, features_categorical):
