@@ -1,29 +1,30 @@
-# Created by: Haris Rasul
-# Date: Feb 20th 2024
-# SATreeCraft Python Library for user oriented approach
-# Two Classification objectives - Min height tree 100% training classification ; Max accuracy given fixed depth 
-# Works on Catgeoircal feature and Numerical feature dataset
+"""
+SATreeCraft Python Library for user-oriented approach.
+
+This library provides tools for solving classification problems using SAT-based decision trees. It supports two classification objectives:
+1. Minimum height tree with 100% training classification.
+2. Maximum accuracy given a fixed depth.
+
+The library works with datasets containing both categorical and numerical features.
+
+Created by: Haris Rasul
+Date: Feb 20th, 2024
+"""
+
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import LabelEncoder
-import math
-# clasification modules 
-from classification.min_height_tree_module import *
-from classification.fixed_height_tree_module import *
-from classification.min_height_tree_categorical_module import *
-from classification.fixed_height_tree_categorical_module import *
 
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from classification.additional_classification_constraints import *
+from classification.min_height_tree_module import build_clauses, create_solution_matrix, add_thresholds, create_literals, solve_cnf, build_complete_tree, visualize_tree
+from classification.fixed_height_tree_module import build_clauses_fixed_tree, create_literals_fixed_tree, solve_wcnf
+from classification.min_height_tree_categorical_module import build_clauses_categorical, add_thresholds_categorical
+from classification.fixed_height_tree_categorical_module import build_clauses_categorical_fixed
+from classification.additional_classification_constraints import add_oblivious_tree_constraints, add_oblivious_tree_constraints2, min_support, build_clauses_fixed_tree_min_margin_constraint_add
 
-# clustering modules 
-from clustering.clustering_advanced import *
-from clustering.clustering_minsplit import *
-from clustering.clustering_smartPairs import *
+from clustering.clustering_advanced import create_literals_cluster_tree, build_clauses_cluster_tree_MD, create_literal_matrices, create_distance_classes,  build_complete_tree_clustering, solve_wcnf_clustering, assign_clusters_and_diameters
+from clustering.clustering_minsplit import build_clauses_cluster_tree_MD_MS
+from clustering.clustering_smartPairs import create_literals_cluster_tree_bicriteria, build_clauses_cluster_tree_MD_MS_Smart_Pair, create_literal_matrices_bicriteria, WCNF
 
-# Loandra solver support 
-from loandra_support.loandra import *
+from loandra_support.loandra import run_loandra_and_parse_results, transform_tree_from_loandra
 
 class SATreeCraft:
     """

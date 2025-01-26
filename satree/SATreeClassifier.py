@@ -1,17 +1,13 @@
-# Created by: Haris Rasul
-# Date: Feb 20th 2024
-# SAT Tree model classifier 
+"""
+SAT Tree model classifier. This module provides a classifier that uses a pre-built decision tree to make predictions
+and evaluate performance. The tree is based on the SAT solution for the training dataset.
 
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+Created by: Haris Rasul
+Date: Feb 20th, 2024
+"""
+
 import numpy as np
-import pandas as pd
-from sklearn.preprocessing import LabelEncoder
-
-from classification.min_height_tree_module import *
-from classification.fixed_height_tree_module import *
-from classification.min_height_tree_categorical_module import *
-from classification.fixed_height_tree_categorical_module import *
-
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
 class SATreeClassifier:
     
