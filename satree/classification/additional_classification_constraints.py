@@ -167,7 +167,8 @@ def build_clauses_fixed_tree_min_margin_constraint_add(literals, X, TB, TL, num_
 
     return wcnf
 
-def add_oblivious_tree_constraints(cnf, features, depth, literals):
+
+def add_oblivious_tree_constraints(cnf, features, depth, literals, dataset=None, tree_structure='Oblivious'):
     """
     Add constraints to the CNF for an oblivious tree where all nodes at the same level
     must select the same feature for splitting.
@@ -177,56 +178,20 @@ def add_oblivious_tree_constraints(cnf, features, depth, literals):
     - TB (list): Indices of branching nodes in the tree.
     - features (list): List of features in the dataset.
     - depth (int): The depth of the tree.
-    
+    - literals (dict): A dictionary mapping literals to their unique integer identifiers.
+    - dataset (list): The dataset containing data points.
+    - tree_structure (str): The type of tree structure to consider (Oblivious or Oblivious2).
+
     Returns:
     - cnf (CNF or WCNF): The CNF formula with the added constraints.
     """
-    # print("we got here hello!!!")
-    # print("CNF: ", cnf)
-    # print("Features", features)
-    # print("Depth", depth)
-    # print("Literals", literals)
+
     def level_nodes(level, max_depth):
         """Return the node indices at a given level."""
         start = (2 ** level) - 1
         end = min((2 ** (level + 1)) - 1, (2 ** max_depth) - 1)
         return list(range(start, end))
 
-    for d in range(depth):  # Exclude the last level which has the leaf nodes
-        nodes_at_level = level_nodes(d, depth)
-        # print(nodes_at_level)
-        for feature in features:
-            for i in range(len(nodes_at_level)):
-                for j in range(i+1, len(nodes_at_level)):
-                    t1 = nodes_at_level[i]
-                    t2 = nodes_at_level[j]
-                    # print(t1)
-                    # print(t2)
-                    # Add clauses to enforce the same feature is chosen by both nodes
-                    cnf.append([-literals[f'a_{t1}_{feature}'], literals[f'a_{t2}_{feature}']])
-                    cnf.append([literals[f'a_{t1}_{feature}'], -literals[f'a_{t2}_{feature}']])
-    return cnf
-
-def add_oblivious_tree_constraints2(cnf, features, depth, literals, dataset):
-    """
-    Add constraints to the CNF for an oblivious tree where all nodes at the same level
-    must select the same feature and the same threshold for splitting.
-
-    Parameters:
-    - cnf (CNF or WCNF): The current CNF formula to which we will add the constraints.
-    - features (list): List of features in the dataset.
-    - depth (int): The depth of the tree.
-    - literals (dict): Dictionary of literals used in the CNF.
-    - dataset (list): The dataset being used.
-
-    Returns:
-    - cnf (CNF or WCNF): The CNF formula with the added constraints.
-    """
-    def level_nodes(level, max_depth):
-        """Return the node indices at a given level."""
-        start = (2 ** level) - 1
-        end = min((2 ** (level + 1)) - 1, (2 ** max_depth) - 1)
-        return list(range(start, end))
 
     for d in range(depth):  # Exclude the last level which has the leaf nodes
         nodes_at_level = level_nodes(d, depth)
@@ -238,10 +203,11 @@ def add_oblivious_tree_constraints2(cnf, features, depth, literals, dataset):
                     # Add clauses to enforce the same feature is chosen by both nodes
                     cnf.append([-literals[f'a_{t1}_{feature}'], literals[f'a_{t2}_{feature}']])
                     cnf.append([literals[f'a_{t1}_{feature}'], -literals[f'a_{t2}_{feature}']])
-                    
-                    # Add clauses to enforce the same threshold is chosen by both nodes
-                    for k in range(len(dataset)):
-                        cnf.append([-literals[f's_{k}_{t1}'], literals[f's_{k}_{t2}']])
-                        cnf.append([literals[f's_{k}_{t1}'], -literals[f's_{k}_{t2}']])
-                        
+
+                    if tree_structure == 'Oblivious2':
+                        # Add clauses to enforce the same threshold is chosen by both nodes
+                        for k in range(len(dataset)):
+                            cnf.append([-literals[f's_{k}_{t1}'], literals[f's_{k}_{t2}']])
+                            cnf.append([literals[f's_{k}_{t1}'], -literals[f's_{k}_{t2}']])
+
     return cnf

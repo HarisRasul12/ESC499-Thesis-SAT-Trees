@@ -19,7 +19,7 @@ from satree.treemodder.builder import build_complete_tree, create_literals
 from classification.fixed_height_tree_module import build_clauses_fixed_tree, solve_wcnf
 from classification.min_height_tree_categorical_module import build_clauses_categorical, add_thresholds_categorical
 from classification.fixed_height_tree_categorical_module import build_clauses_categorical_fixed
-from classification.additional_classification_constraints import add_oblivious_tree_constraints, add_oblivious_tree_constraints2, min_support, build_clauses_fixed_tree_min_margin_constraint_add
+from classification.additional_classification_constraints import add_oblivious_tree_constraints, min_support, build_clauses_fixed_tree_min_margin_constraint_add
 
 from clustering.clustering_advanced import build_clauses_cluster_tree_MD, create_literal_matrices, create_distance_classes, solve_wcnf_clustering, assign_clusters_and_diameters
 from clustering.clustering_minsplit import build_clauses_cluster_tree_MD_MS
@@ -113,11 +113,8 @@ class SATreeCraft:
             literals = create_literals(TB, TL, features, labels, len(dataset), False)[0]
             cnf = build_clauses_categorical(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels, true_labels_for_points)
 
-            # Oblivious Tree Constraints addition if ever used 
-            if (self.tree_structure == 'Oblivious'):
-                cnf = add_oblivious_tree_constraints(cnf,features,depth,literals)
-            if(self.tree_structure == 'Oblivious2'):
-                cnf = add_oblivious_tree_constraints2(cnf,features,depth,literals,dataset)
+            # Oblivious Tree Constraints addition if ever used
+            cnf = add_oblivious_tree_constraints(cnf, features, depth, literals, dataset, self.tree_structure)
 
             solution = solve_cnf(cnf, literals, TL, tree, labels, features, dataset)
             
@@ -148,10 +145,7 @@ class SATreeCraft:
             wcnf = min_support(wcnf, literals, dataset, TL, self.min_support)
         
         # Oblivious Tree Structure Encodings enforced assuming not complete 
-        if (self.tree_structure == 'Oblivious'):
-            wcnf = add_oblivious_tree_constraints(wcnf,features,depth,literals)
-        if(self.tree_structure == 'Oblivious2'):
-            wcnf = add_oblivious_tree_constraints2(wcnf,features,depth,literals,dataset)
+        wcnf = add_oblivious_tree_constraints(wcnf, features, depth, literals, dataset, self.tree_structure)
 
 
         solution,cost = solve_wcnf(wcnf, literals, TL, tree, labels, features, dataset)
@@ -181,11 +175,7 @@ class SATreeCraft:
             cnf = build_clauses(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
             
             # Oblivious Tree Constraints addition if ever used 
-            if (self.tree_structure == 'Oblivious'):
-                cnf = add_oblivious_tree_constraints(cnf,features,depth,literals)
-            if(self.tree_structure == 'Oblivious2'):
-                cnf = add_oblivious_tree_constraints2(cnf,features,depth,literals,dataset)
-
+            cnf = add_oblivious_tree_constraints(cnf, features, depth, literals, dataset, self.tree_structure)
 
             solution = solve_cnf(cnf, literals, TL, tree, labels, features, dataset)
             
@@ -219,13 +209,9 @@ class SATreeCraft:
         # min support constraint 
         if (self.min_support > 0):
             wcnf = min_support(wcnf, literals, dataset, TL, self.min_support)
-        
-        # Oblivious Tree Structure Encodings enforced assuming not complete 
-        if (self.tree_structure == 'Oblivious'):
-            # print("adding oblivious contraints")
-            wcnf = add_oblivious_tree_constraints(wcnf,features,depth,literals)
-        if(self.tree_structure == 'Oblivious2'):
-            wcnf = add_oblivious_tree_constraints2(wcnf,features,depth,literals,dataset)
+
+        # Oblivious Tree Constraints addition if ever used
+        wcnf = add_oblivious_tree_constraints(wcnf, features, depth, literals, dataset, self.tree_structure)
 
         solution,cost = solve_wcnf(wcnf, literals, TL, tree, labels, features, dataset)
         
@@ -523,16 +509,10 @@ class SATreeCraft:
         # min support constraint 
         if (self.min_support > 0):
             wcnf = min_support(wcnf, literals, dataset, TL, self.min_support)
-        
-        # Oblivious Tree Structure Encodings enforced assuming not complete 
-        if (self.tree_structure == 'Oblivious'):
-            # print("adding oblivious contraints")
-            wcnf = add_oblivious_tree_constraints(wcnf,features,depth,literals)
-        if (self.tree_structure == 'Oblivious2'):
-            # print("adding oblivious contraints")
-            wcnf = add_oblivious_tree_constraints2(wcnf,features,depth,literals,dataset)
 
-        
+        # Oblivious Tree Constraints addition if ever used
+        wcnf = add_oblivious_tree_constraints(wcnf, features, depth, literals, dataset, self.tree_structure)
+
         # LOANDRA SUPPORT - EXPORT FILE 
         wcnf.to_file(execution_path)
         solution,cost = run_loandra_and_parse_results(loandra_path, execution_path)
@@ -566,12 +546,9 @@ class SATreeCraft:
         # Min support constraint can be added
         if (self.min_support > 0):
             wcnf = min_support(wcnf, literals, dataset, TL, self.min_support)
-        
-        # Oblivious Tree Structure Encodings enforced assuming not complete 
-        if (self.tree_structure == 'Oblivious'):
-            wcnf = add_oblivious_tree_constraints(wcnf,features,depth,literals)
-        if (self.tree_structure == 'Oblivious2'):
-            wcnf = add_oblivious_tree_constraints2(wcnf,features,depth,literals,dataset)
+
+        # Oblivious Tree Constraints addition if ever used
+        wcnf = add_oblivious_tree_constraints(wcnf, features, depth, literals, dataset, self.tree_structure)
 
         # LOANDRA SUPPORT - EXPORT FILE 
         wcnf.to_file(execution_path)
@@ -602,11 +579,8 @@ class SATreeCraft:
             cnf = build_clauses(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
             
             # Oblivious Tree Constraints addition if ever used 
-            if (self.tree_structure == 'Oblivious'):
-                cnf = add_oblivious_tree_constraints(cnf,features,depth,literals)
-            if (self.tree_structure == 'Oblivious2'):
-                cnf = add_oblivious_tree_constraints2(cnf,features,depth,literals,dataset)
-            
+            cnf = add_oblivious_tree_constraints(cnf, features, depth, literals, dataset, self.tree_structure)
+
             # LOANDRA SUPPORT - EXPORT FILE
             
             # LOANDRA SUPPORT - NEED TO CONNVERT TO NCF MAX SAT PROBLEM BASED ON THEIR IMPLMENTATION (ALL HARD CLAUSES)
@@ -648,10 +622,7 @@ class SATreeCraft:
             cnf = build_clauses_categorical(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels, true_labels_for_points)
 
             # Oblivious Tree Constraints addition if ever used 
-            if (self.tree_structure == 'Oblivious'):
-                cnf = add_oblivious_tree_constraints(cnf,features,depth,literals)
-            if (self.tree_structure == 'Oblivious2'):
-                cnf = add_oblivious_tree_constraints2(cnf,features,depth,literals,dataset)
+            cnf = add_oblivious_tree_constraints(cnf, features, depth, literals, dataset, self.tree_structure)
 
             # LOANDRA SUPPORT - NEED TO CONNVERT TO NCF MAX SAT PROBLEM BASED ON THEIR IMPLMENTATION (ALL HARD CLAUSES)
             wcnf = WCNF()
