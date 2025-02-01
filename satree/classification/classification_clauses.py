@@ -2,9 +2,71 @@ from pysat.formula import WCNF
 from min_height_tree_module import get_ancestors, compute_ordering
 
 
-def construct_maxsat_clauses(literals, X, TB, TL, num_features, labels):
+
+def add_data_point_clauses(cnf, literals, X, TB, TL, num_features):
     """
-    Constructs the clauses for the SAT solver based on the decision tree encoding.
+    Adds data point direction and path validity clauses to the CNF object.
+
+    This function adds clauses to ensure proper data point direction based on feature values,
+    path validity from right and left traversal, and deviations for data points not ending in leaf nodes.
+
+    Args:
+        cnf (CNF): The CNF object to which the clauses will be added.
+        literals (dict): A dictionary mapping literals to variable indices.
+        X (list): The dataset, a list of tuples representing data points.
+        TB (list): Indices of branching nodes.
+        TL (list): Indices of leaf nodes.
+        num_features (int): Number of features in the dataset.
+
+    Returns:
+        CNF: The updated CNF object with the added data point clauses.
+    """
+    # Clause (3) and (4): Data point direction based on feature values
+    for j in range(num_features):
+        Oj = compute_ordering(X, j)
+        for (i, ip) in Oj:
+            if X[i][j] < X[ip][j]:  # Different feature values (Clause 3)
+                for t in TB:
+                    cnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i}_{t}'], -literals[f's_{ip}_{t}']])
+            if X[i][j] == X[ip][j]:  # Equal feature values (Clause 4)
+                for t in TB:
+                    cnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i}_{t}'], -literals[f's_{ip}_{t}']])
+                    cnf.append([-literals[f'a_{t}_{j}'], -literals[f's_{i}_{t}'], literals[f's_{ip}_{t}']])
+
+    # Clause (5 and 6): Path validity from right traversal and left traversal
+    for t in TL:
+        left_ancestors = get_ancestors(t, 'left')
+        right_ancestors = get_ancestors(t, 'right')
+        for i in range(len(X)):
+            # Data point i ends at leaf node t (Clause 5 and 6) - assumption made!!!
+            if left_ancestors:
+                cnf.append([-literals[f'z_{i}_{t}']] + [literals[f's_{i}_{a}'] for a in left_ancestors])
+            if right_ancestors:
+                cnf.append([-literals[f'z_{i}_{t}']] + [-literals[f's_{i}_{a}'] for a in right_ancestors])
+
+    # Clause (7): Each data point that does not end up in leaf node t has at least one deviation from the path
+    for xi in range(len(X)):
+        for t in TL:
+            deviations = []
+            left_ancestors = get_ancestors(t, 'left')  # Get left ancestors using TB indices
+            right_ancestors = get_ancestors(t, 'right')  # Get right ancestors using TB indices
+            # Only append deviations if there are ancestors on the corresponding side
+            if left_ancestors:
+                deviations.extend([-literals[f's_{xi}_{ancestor}'] for ancestor in left_ancestors])
+            if right_ancestors:
+                deviations.extend([literals[f's_{xi}_{ancestor}'] for ancestor in right_ancestors])
+            # Only append the clause if there are any deviations
+            if deviations:
+                cnf.append([literals[f'z_{xi}_{t}']] + deviations)
+
+    return cnf
+
+
+
+
+def construct_feature_selection_clauses(literals, X, TB, TL, num_features):
+    """
+    Constructs the feature selection clauses for the SAT solver based on the decision tree encoding.
 
     Args:
         literals (dict): A dictionary mapping literals to variable indices.
@@ -12,10 +74,9 @@ def construct_maxsat_clauses(literals, X, TB, TL, num_features, labels):
         TB (list): Indices of branching nodes.
         TL (list): Indices of leaf nodes.
         num_features (int): Number of features in the dataset.
-        labels (list): Possible class labels for the data points.
 
     Returns:
-        WCNF: A WCNF object containing all the clauses, with hard clauses for the tree structure and soft clauses for maximizing correctly classified points.
+        WCNF: A WCNF object containing all the feature selection clauses.
     """
     wcnf = WCNF()
 
@@ -31,43 +92,27 @@ def construct_maxsat_clauses(literals, X, TB, TL, num_features, labels):
                 clause = [-literals[f'a_{t}_{j}'], -literals[f'a_{t}_{jp}']]
                 wcnf.append(clause)
 
-    # Clause (3) and (4): Data point direction based on feature values
-    for j in range(num_features):
-        Oj = compute_ordering(X, j)
-        for (i, ip) in Oj:
-            if X[i][j] < X[ip][j]:  # Different feature values (Clause 3)
-                for t in TB:
-                    wcnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i}_{t}'], -literals[f's_{ip}_{t}']])
-            if X[i][j] == X[ip][j]:  # Equal feature values (Clause 4)
-                for t in TB:
-                    wcnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i}_{t}'], -literals[f's_{ip}_{t}']])
-                    wcnf.append([-literals[f'a_{t}_{j}'], -literals[f's_{i}_{t}'], literals[f's_{ip}_{t}']])
+    wcnf = add_data_point_clauses(wcnf, literals, X, TB, TL, num_features)
 
-    # Clause (5 and 6): Path validity from right traversal and left traversal
-    for t in TL:
-        left_ancestors = get_ancestors(t, 'left')
-        right_ancestors = get_ancestors(t, 'right')
-        for i in range(len(X)):
-            # Data point i ends at leaf node t (Clause 5 and 6) - assumption made!!!
-            if left_ancestors:
-                wcnf.append([-literals[f'z_{i}_{t}']] + [literals[f's_{i}_{a}'] for a in left_ancestors])
-            if right_ancestors:
-                wcnf.append([-literals[f'z_{i}_{t}']] + [-literals[f's_{i}_{a}'] for a in right_ancestors])
+    return wcnf
 
-    # Clause (7): Each data point that does not end up in leaf node t has at least one deviation from the path
-    for xi in range(len(X)):
-        for t in TL:
-            deviations = []
-            left_ancestors = get_ancestors(t, 'left')  # Get left ancestors using TB indices
-            right_ancestors = get_ancestors(t, 'right')  # Get right ancestors using TB indices
-            # Only append deviations if there are ancestors on the corresponding side
-            if left_ancestors:
-                deviations.extend([-literals[f's_{xi}_{ancestor}'] for ancestor in left_ancestors])
-            if right_ancestors:
-                deviations.extend([literals[f's_{xi}_{ancestor}'] for ancestor in right_ancestors])
-            # Only append the clause if there are any deviations
-            if deviations:
-                wcnf.append([literals[f'z_{xi}_{t}']] + deviations)
+def construct_maxsat_clauses(literals, X, TB, TL, num_features, labels):
+    """
+    Constructs the clauses for the SAT solver based on the decision tree encoding.
+
+    Args:
+        literals (dict): A dictionary mapping literals to variable indices.
+        X (list): The dataset, a list of tuples representing data points.
+        TB (list): Indices of branching nodes.
+        TL (list): Indices of leaf nodes.
+        num_features (int): Number of features in the dataset.
+        labels (list): Possible class labels for the data points.
+
+    Returns:
+        WCNF: A WCNF object containing all the clauses, with hard clauses for the tree structure and soft clauses for maximizing correctly classified points.
+    """
+
+    wcnf = construct_feature_selection_clauses(literals, X, TB, TL, num_features)
 
     # Clause (8): Each leaf node is assigned at most one label
     for t in TL:
