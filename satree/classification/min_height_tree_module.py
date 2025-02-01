@@ -11,6 +11,7 @@ from pysat.formula import CNF
 from pysat.solvers import Solver
 
 from satree.treemodder.builder import build_complete_tree, create_literals
+from satree.classification.classification_clauses import add_redundant_constraints
 
 
 def get_ancestors(node_index, side):
@@ -115,20 +116,7 @@ def build_clauses(literals, X, TB, TL, num_features, labels,true_labels):
             for cp in range(c + 1, len(labels)):
                 cnf.append([-literals[f'g_{t}_{labels[c]}'], -literals[f'g_{t}_{labels[cp]}']])
 
-    # Clause (9) and (10): Redundant constraints to prune the search space
-    # These clauses are optimizations
-    for t in TB:
-        # Find the data point with the lowest and highest feature value for each feature
-        for j in range(num_features):
-            sorted_by_feature = sorted(range(len(X)), key=lambda k: X[k][j])
-            lowest_value_index = sorted_by_feature[0]
-            highest_value_index = sorted_by_feature[-1]
-
-            # Clause (9): The data point with the lowest feature value is directed left
-            cnf.append([-literals[f'a_{t}_{j}'], literals[f's_{lowest_value_index}_{t}']])
-
-            # Clause (10): The data point with the highest feature value is directed right
-            cnf.append([-literals[f'a_{t}_{j}'], -literals[f's_{highest_value_index}_{t}']])
+    cnf = add_redundant_constraints(cnf, literals, X, TB, num_features)
 
     # Clause (11): Correct class labels for leaf nodes
     for t in TL:
