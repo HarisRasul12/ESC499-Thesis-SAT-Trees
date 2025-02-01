@@ -148,3 +148,26 @@ def solve_wcnf(wcnf, literals, TL, tree_structure, labels,features,datasetX):
         return model, cost
     else:
         return "No solution exists"
+
+
+def find_fixed_depth_tree(features, labels, true_labels_for_points, dataset,depth):
+    solution = "No solution exists"
+    tree_with_thresholds = None
+    tree = None
+    literals = None
+    cost = None
+
+    tree, TB, TL = build_complete_tree(depth)
+    literals = create_literals(TB, TL, features, labels, len(dataset), True)[0]
+    wcnf = build_clauses_fixed_tree(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
+    solution,cost = solve_wcnf(wcnf, literals, TL, tree, labels, features, dataset)
+
+    if solution != "No solution exists":
+        tree_with_thresholds = add_thresholds(tree, literals, solution, dataset)
+        dot = visualize_tree(tree_with_thresholds)
+        dot.render(f'images/fixed_height/binary_decision_tree_fixed_depth_{depth}', format='png', cleanup=True)
+    else:
+        print('could not find solution')
+        return 'No solution'
+
+    return tree_with_thresholds, literals, depth, solution, cost
