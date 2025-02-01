@@ -8,10 +8,11 @@ minimum split criteria.
 import numpy as np
 from scipy.spatial.distance import euclidean
 
-from satree.clustering.core import create_literals_cluster_tree, create_literal_matrices_modular
+from satree.clustering.core import create_literals_cluster_tree
 from satree.treemodder.builder import build_complete_tree
-from satree.clustering.clustering_advanced import solve_wcnf_clustering, create_distance_classes, assign_clusters_and_diameters
+from satree.clustering.clustering_advanced import create_distance_classes
 from clustering_clauses import add_clustering_encodings, add_distance_class_clauses, construct_clustering_clauses
+from clustering_minsplit import process_clustering_solution
 
 
 def build_clauses_cluster_tree_MD_MS_Smart_Pair(literals, X, TB, TL, num_features, k_clusters, CL_pairs, ML_pairs, distance_classes):
@@ -117,26 +118,8 @@ def min_split_clustering_problem_SmartPair(dataset,features,k_clusters, depth, e
     literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size, distance_classes, True)
     wcnf = build_clauses_cluster_tree_MD_MS_Smart_Pair(literals, dataset, TB, TL, num_features, k_clusters,
                                   CL_pairs, ML_pairs, distance_classes)
-    
-    solution = solve_wcnf_clustering(wcnf)
 
-    a_matrix, s_matrix, z_matrix, g_matrix, x_i_c_matrix, bw_m_vector, bw_p_vector = create_literal_matrices_modular(
-        literals=literals,
-        solution=solution,
-        dataset_size=len(dataset),
-        k_clusters=k_clusters,
-        TB=TB,
-        TL=TL,
-        num_features=len(features),
-        distance_classes= distance_classes,
-        bicriteria=True
-    )
-
-    cluster_assignments, cluster_diameters = assign_clusters_and_diameters(
-        x_i_c_matrix, dataset, k_clusters
-    )
-
-    return cluster_assignments, cluster_diameters
+    return process_clustering_solution(wcnf, literals, dataset, features, k_clusters, TB, TL, distance_classes)[:2]
 
 
 

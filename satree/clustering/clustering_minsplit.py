@@ -39,6 +39,45 @@ def build_clauses_cluster_tree_MD_MS(literals, X, TB, TL, num_features, k_cluste
     return wcnf
 
 
+def process_clustering_solution(wcnf, literals, dataset, features, k_clusters, TB, TL, distance_classes):
+    """
+    Processes the clustering solution by solving the WCNF problem and creating literal matrices.
+
+    Args:
+        wcnf (WCNF): The WCNF object containing the clauses.
+        literals (dict): A dictionary mapping literals to variable indices.
+        dataset (list): The dataset, a list of tuples representing data points.
+        features (list): List of feature names or indices.
+        k_clusters (int): Number of clusters.
+        TB (list): Indices of branching nodes.
+        TL (list): Indices of leaf nodes.
+        distance_classes (list): List of pairs in each distance class.
+
+    Returns:
+        tuple: A tuple containing cluster assignments and cluster diameters.
+    """
+    solution = solve_wcnf_clustering(wcnf)
+
+    a_matrix, s_matrix, z_matrix, g_matrix, x_i_c_matrix, bw_m_vector, bw_p_vector = create_literal_matrices_modular(
+        literals=literals,
+        solution=solution,
+        dataset_size=len(dataset),
+        k_clusters=k_clusters,
+        TB=TB,
+        TL=TL,
+        num_features=len(features),
+        distance_classes=distance_classes,
+        bicriteria=True
+    )
+
+    cluster_assignments, cluster_diameters = assign_clusters_and_diameters(
+        x_i_c_matrix, dataset, k_clusters
+    )
+
+    return cluster_assignments, cluster_diameters, solution
+
+
+
 def min_split_clustering_problem(dataset,features,k_clusters, depth, epsilon = 0, CL_pairs = np.array([]), ML_pairs = np.array([])):
     """
     Solves a clustering minimum split problem by constructing a complete binary tree of a specified depth,
@@ -74,27 +113,8 @@ def min_split_clustering_problem(dataset,features,k_clusters, depth, epsilon = 0
     literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size, distance_classes, True)
     wcnf = build_clauses_cluster_tree_MD_MS(literals, dataset, TB, TL, num_features, k_clusters,
                                   CL_pairs, ML_pairs, distance_classes)
-    
-    solution = solve_wcnf_clustering(wcnf)
 
-    a_matrix, s_matrix, z_matrix, g_matrix, x_i_c_matrix, bw_m_vector, bw_p_vector = create_literal_matrices_modular(
-        literals=literals,
-        solution=solution,
-        dataset_size=len(dataset),
-        k_clusters=k_clusters,
-        TB=TB,
-        TL=TL,
-        num_features=len(features),
-        distance_classes= distance_classes,
-        bicriteria=True
-    )
-
-    cluster_assignments, cluster_diameters = assign_clusters_and_diameters(
-        x_i_c_matrix, dataset, k_clusters
-    )
-
-    return cluster_assignments, cluster_diameters
-
+    return process_clustering_solution(wcnf, literals, dataset, features, k_clusters, TB, TL, distance_classes)[:2]
 
 
 # if __name__ == "__main__":

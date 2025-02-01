@@ -23,11 +23,12 @@ from classification.fixed_height_tree_categorical_module import build_clauses_ca
 from classification.additional_classification_constraints import add_oblivious_tree_constraints, min_support, build_clauses_fixed_tree_min_margin_constraint_add
 
 from clustering.clustering_advanced import build_clauses_cluster_tree_MD, create_distance_classes, solve_wcnf_clustering, assign_clusters_and_diameters
-from clustering.clustering_minsplit import build_clauses_cluster_tree_MD_MS
+from clustering.clustering_minsplit import build_clauses_cluster_tree_MD_MS, process_clustering_solution
 from clustering.clustering_smartPairs import build_clauses_cluster_tree_MD_MS_Smart_Pair
 from clustering.core import create_literals_cluster_tree, create_literal_matrices_modular
 
 from loandra_support.loandra import run_loandra_and_parse_results, transform_tree_from_loandra
+
 
 class SATreeCraft:
     """
@@ -226,7 +227,7 @@ class SATreeCraft:
         
         return tree_with_thresholds, literals, depth, solution, cost, wcnf
 
-    
+
     # Save the plot to the specified directory with the given filename format
     def plot_and_save_clusters_to_drive(self,dataset, cluster_assignments, k_clusters):
         """
@@ -325,20 +326,11 @@ class SATreeCraft:
         else:
             wcnf = build_clauses_cluster_tree_MD_MS(literals, dataset, TB, TL, num_features, k_clusters,
                                     CL_pairs, ML_pairs, distance_classes)
-    
-        solution = solve_wcnf_clustering(wcnf)
-        a_matrix, s_matrix, z_matrix, g_matrix, x_i_c_matrix, bw_m_vector, bw_p_vector = create_literal_matrices_modular(
-                                                                                                                            literals=literals,
-                                                                                                                            solution=solution,
-                                                                                                                            dataset_size=len(dataset),
-                                                                                                                            k_clusters=k_clusters,
-                                                                                                                            TB=TB,
-                                                                                                                            TL=TL,
-                                                                                                                            num_features=len(features),
-                                                                                                                            distance_classes= distance_classes,
-                                                                                                                            bicriteria=True
-                                                                                                                            )
-        cluster_assignments, cluster_diameters = assign_clusters_and_diameters(x_i_c_matrix, dataset, k_clusters)
+
+
+        cluster_assignments, cluster_diameters, solution = process_clustering_solution(wcnf, literals, dataset, features, k_clusters, TB, TL, distance_classes)
+
+
         if (len(self.features) <= 2):
             self.plot_and_save_clusters_to_drive(dataset, cluster_assignments, k_clusters)
         # print(x_i_c_matrix)
