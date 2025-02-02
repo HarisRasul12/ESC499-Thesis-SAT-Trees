@@ -11,7 +11,7 @@ from pysat.formula import CNF
 from pysat.solvers import Solver
 
 from satree.treemodder.builder import build_complete_tree, create_literals
-from satree.classification.classification_clauses import add_redundant_constraints, add_data_point_clauses
+from satree.classification.classification_clauses import add_redundant_constraints, construct_maxsat_clauses
 
 
 def get_ancestors(node_index, side):
@@ -59,26 +59,8 @@ def build_clauses(literals, X, TB, TL, num_features, labels,true_labels):
         CNF: A CNF object containing all the clauses.
     """
     cnf = CNF()
-    
-    # Clause (1) and (2): Feature selection at branching nodes
-    for t in TB:
-        # At least one feature is chosen (Clause 2)
-        clause = [literals[f'a_{t}_{j}'] for j in range(num_features)]
-        cnf.append(clause)
-        
-        # No two features are chosen (Clause 1)
-        for j in range(num_features):
-            for jp in range(j + 1, num_features):
-                clause = [-literals[f'a_{t}_{j}'], -literals[f'a_{t}_{jp}']]
-                cnf.append(clause)
 
-    cnf = add_data_point_clauses(cnf, literals, X, TB, TL, num_features)
-
-    # Clause (8): Each leaf node is assigned at most one label
-    for t in TL:
-        for c in range(len(labels)):
-            for cp in range(c + 1, len(labels)):
-                cnf.append([-literals[f'g_{t}_{labels[c]}'], -literals[f'g_{t}_{labels[cp]}']])
+    cnf = construct_maxsat_clauses(cnf, literals, X, TB, TL, num_features, labels)
 
     cnf = add_redundant_constraints(cnf, literals, X, TB, num_features)
 

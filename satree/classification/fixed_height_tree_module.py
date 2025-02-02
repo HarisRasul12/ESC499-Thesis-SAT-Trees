@@ -30,8 +30,10 @@ def build_clauses_fixed_tree(literals, X, TB, TL, num_features, labels,true_labe
         WCNF: A WCNF object containing all the clauses, with hard clauses for the tree structure and soft clauses for maximizing correctly classified points
     """
 
+    wcnf = WCNF()
+
     # Now the problem has become Partial MaxSAT - we will assign weights to the soft clauses Eq. (13). Eq(1-10,12) HARD clauses
-    wcnf = construct_maxsat_clauses(literals, X, TB, TL, num_features, labels)
+    wcnf = construct_maxsat_clauses(wcnf, literals, X, TB, TL, num_features, labels)
 
     # Redundant constraints to prune the search space
     wcnf = add_redundant_constraints(wcnf, literals, X, TB, num_features)

@@ -76,8 +76,9 @@ def build_clauses_fixed_tree_min_margin_constraint_add(literals, X, TB, TL, num_
     Returns:
         WCNF: A WCNF object containing all the clauses, with hard clauses for the tree structure and soft clauses for maximizing correctly classified points
     """
+    wcnf = WCNF()
     # Now the problem has become Partial MaxSAT - we will assign weights to the soft clauses Eq. (13). Eq(1-10,12) HARD clauses
-    wcnf = construct_maxsat_clauses(literals, X, TB, TL, num_features, labels)
+    wcnf = construct_maxsat_clauses(wcnf, literals, X, TB, TL, num_features, labels)
 
     # Clause (9) and (10): Redundant constraints to prune the search space
     # These clauses are optimizations

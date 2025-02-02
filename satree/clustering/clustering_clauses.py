@@ -20,7 +20,8 @@ def construct_clustering_clauses(literals, X, TB, TL, num_features, k_clusters, 
     Returns:
         WCNF: A WCNF object containing all the clauses, with hard clauses for the tree structure and soft clauses for maximizing correctly classified points.
     """
-    wcnf = construct_feature_selection_clauses(literals, X, TB, TL, num_features)
+    wcnf = WCNF()
+    wcnf = construct_feature_selection_clauses(wcnf, literals, X, TB, TL, num_features)
     wcnf = add_redundant_constraints(wcnf, literals, X, TB, num_features)
 
     return wcnf
