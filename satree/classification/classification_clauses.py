@@ -1,8 +1,4 @@
-# from pysat.formula import WCNF
-from satree.classification.min_height_tree_module import get_ancestors, compute_ordering
-from satree.classification.classification_core import compute_ordering_with_categorical
-
-
+from satree.classification.classification_core import compute_ordering_with_categorical, get_ancestors, compute_ordering
 
 def add_data_point_clauses(cnf, literals, X, TB, TL, num_features):
     """

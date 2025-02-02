@@ -14,35 +14,6 @@ from satree.treemodder.builder import build_complete_tree, create_literals
 from satree.classification.classification_clauses import add_redundant_constraints, construct_maxsat_clauses
 
 
-def get_ancestors(node_index, side):
-    """
-    Find all the ancestors of a given node in the tree on the specified side (left or right).
-
-    Parameters:
-    - tree_structure (list): The complete binary tree structure.
-    - node_index (int): The index of the leaf node for which to find ancestors.
-    - side (str): Side of the ancestors to find ('left' or 'right').
-
-    Returns:
-    - ancestors (list): A list of indices of the ancestors on the specified side.
-    """
-    ancestors = []
-    current_index = node_index
-    while True:
-        parent_index = (current_index - 1) // 2
-        if parent_index < 0:
-            break
-        # Check if current node is a left or right child
-        if (side == 'left' and current_index % 2 == 1) or (side == 'right' and current_index % 2 == 0):
-            ancestors.append(parent_index)
-        current_index = parent_index
-    return ancestors
-
-# Helper function to sort data points by feature and create O_j
-def compute_ordering(X, feature_index):
-    sorted_indices = sorted(range(len(X)), key=lambda i: X[i][feature_index])
-    return [(sorted_indices[i], sorted_indices[i + 1]) for i in range(len(sorted_indices) - 1)]
-
 def build_clauses(literals, X, TB, TL, num_features, labels,true_labels):
     """
     Constructs the clauses for the SAT solver based on the decision tree encoding.
@@ -188,23 +159,6 @@ def add_thresholds(tree_structure, literals, model_solution, dataset):
     set_thresholds(0, dataset)
 
     return tree_structure
-
-# Create a matrix for each type of variable
-def create_solution_matrix(literals, solution, var_type):
-    # Find the maximum index for this var_type
-    max_index = max(int(key.split('_')[1]) for key, value in literals.items() if key.startswith(var_type)) + 1
-    max_sub_index = max(int(key.split('_')[2]) for key, value in literals.items() if key.startswith(var_type)) + 1
-    
-    # Initialize the matrix with zeros
-    matrix = [[0 for _ in range(max_sub_index)] for _ in range(max_index)]
-    
-    # Fill in the matrix with 1 where the literals are true according to the solution
-    for key, value in literals.items():
-        if key.startswith(var_type):
-            index, sub_index = map(int, key.split('_')[1:])
-            matrix[index][sub_index] = 1 if value in solution else 0
-
-    return matrix
 
 # visualization code
 def add_nodes(dot, tree, node_index=0):

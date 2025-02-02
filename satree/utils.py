@@ -9,8 +9,8 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 import os
-from SATreeClassifier import SATreeClassifier
-from SATreeCraft import SATreeCraft
+from satree.SATreeClassifier import SATreeClassifier
+from satree.SATreeCraft import SATreeCraft
 
 from sklearn.model_selection import KFold
 

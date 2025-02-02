@@ -14,8 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pysat.formula import WCNF
 
-from satree.classification.min_height_tree_module import build_clauses, create_solution_matrix, add_thresholds, solve_cnf, \
-    visualize_tree
+from satree.classification.min_height_tree_module import build_clauses, add_thresholds, solve_cnf, visualize_tree
 from satree.treemodder.builder import build_complete_tree, create_literals
 from satree.classification.fixed_height_tree_module import build_clauses_fixed_tree, solve_wcnf
 from satree.classification.min_height_tree_categorical_module import build_clauses_categorical, add_thresholds_categorical
@@ -27,7 +26,7 @@ from satree.clustering.clustering_minsplit import build_clauses_cluster_tree_MD_
 from satree.clustering.clustering_smartPairs import build_clauses_cluster_tree_MD_MS_Smart_Pair
 from satree.clustering.core import create_literals_cluster_tree, create_literal_matrices_modular
 
-from loandra_support.loandra import run_loandra_and_parse_results, transform_tree_from_loandra
+from satree.loandra_support.loandra import run_loandra_and_parse_results, transform_tree_from_loandra
 
 
 class SATreeCraft:
@@ -817,7 +816,7 @@ class SATreeCraft:
             var_types = ['a', 's', 'z', 'g','p']
         for var_type in var_types:
             if var_type != 'p':
-                matrix = create_solution_matrix(self.final_literals, self.sat_solution, var_type)
+                matrix = self.create_solution_matrix(self.final_literals, self.sat_solution, var_type)
                 print(f"{var_type.upper()} Variables:")
                 for row in matrix:
                     print(' '.join(map(str, row)))
