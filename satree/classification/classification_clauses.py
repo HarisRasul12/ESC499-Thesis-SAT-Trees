@@ -1,6 +1,6 @@
 # from pysat.formula import WCNF
-from min_height_tree_module import get_ancestors, compute_ordering
-from classification_core import compute_ordering_with_categorical
+from satree.classification.min_height_tree_module import get_ancestors, compute_ordering
+from satree.classification.classification_core import compute_ordering_with_categorical
 
 
 

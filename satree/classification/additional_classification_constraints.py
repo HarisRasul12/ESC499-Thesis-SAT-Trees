@@ -9,7 +9,7 @@ to the training dataset by adding soft clauses for maximizing correct solutions 
 from pysat.formula import WCNF
 from pysat.card import CardEnc, IDPool, EncType
 
-from classification_clauses import construct_maxsat_clauses, add_classification_clauses
+from satree.classification.classification_clauses import construct_maxsat_clauses, add_classification_clauses
 
 
 def min_support(wcnf, literals, X, TL, min_support):

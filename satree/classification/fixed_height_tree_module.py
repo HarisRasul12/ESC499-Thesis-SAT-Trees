@@ -9,9 +9,9 @@ hard clauses for the constraints.
 from pysat.formula import WCNF
 from pysat.examples.rc2 import RC2
 
-from min_height_tree_module import get_ancestors, compute_ordering, set_branch_node_features, add_thresholds, visualize_tree
+from satree.classification.min_height_tree_module import set_branch_node_features, add_thresholds, visualize_tree
 from satree.treemodder.builder import build_complete_tree, create_literals
-from classification_clauses import construct_maxsat_clauses, add_classification_clauses, add_redundant_constraints
+from satree.classification.classification_clauses import construct_maxsat_clauses, add_classification_clauses, add_redundant_constraints
 
 
 def build_clauses_fixed_tree(literals, X, TB, TL, num_features, labels,true_labels):

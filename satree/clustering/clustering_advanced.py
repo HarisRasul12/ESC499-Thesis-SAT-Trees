@@ -9,13 +9,10 @@ from itertools import combinations
 from collections import OrderedDict
 
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.spatial.distance import euclidean
 from pysat.examples.rc2 import RC2
 
-from satree.clustering.core import create_literals_cluster_tree, create_literal_matrices_modular
-from satree.treemodder.builder import build_complete_tree
-from clustering_clauses import construct_clustering_clauses, add_clustering_encodings
+from satree.clustering.clustering_clauses import construct_clustering_clauses, add_clustering_encodings
 
 
 def create_distance_classes(dataset, epsilon=0):

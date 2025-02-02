@@ -6,12 +6,11 @@ Module for computing the maximum accuracy of fixed-height trees with categorical
 
 from pysat.formula import WCNF
 
-from min_height_tree_categorical_module import add_thresholds_categorical
-from satree.classification.classification_core import compute_ordering_with_categorical
-from fixed_height_tree_module import solve_wcnf
-from min_height_tree_module import get_ancestors, visualize_tree
+from satree.classification.min_height_tree_categorical_module import add_thresholds_categorical
+from satree.classification.fixed_height_tree_module import solve_wcnf
+from satree.classification.min_height_tree_module import visualize_tree
 from satree.treemodder.builder import build_complete_tree, create_literals
-from classification_clauses import add_clauses_for_features_and_paths, add_classification_clauses, add_feature_selection_clauses_for_branching_nodes
+from satree.classification.classification_clauses import add_clauses_for_features_and_paths, add_classification_clauses, add_feature_selection_clauses_for_branching_nodes
 
 
 def build_clauses_categorical_fixed(literals, X, TB, TL, num_features, features_categorical, features_numerical, labels,true_labels):

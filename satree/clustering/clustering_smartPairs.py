@@ -11,8 +11,8 @@ from scipy.spatial.distance import euclidean
 from satree.clustering.core import create_literals_cluster_tree
 from satree.treemodder.builder import build_complete_tree
 from satree.clustering.clustering_advanced import create_distance_classes
-from clustering_clauses import add_clustering_encodings, add_distance_class_clauses, construct_clustering_clauses
-from clustering_minsplit import process_clustering_solution
+from satree.clustering.clustering_clauses import add_clustering_encodings, add_distance_class_clauses, construct_clustering_clauses
+from satree.clustering.clustering_minsplit import process_clustering_solution
 
 
 def build_clauses_cluster_tree_MD_MS_Smart_Pair(literals, X, TB, TL, num_features, k_clusters, CL_pairs, ML_pairs, distance_classes):

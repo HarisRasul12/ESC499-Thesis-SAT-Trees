@@ -7,10 +7,9 @@ Base module to help solve SAT problems with categorical and numerical features.
 import numpy as np
 from pysat.formula import CNF
 
-from min_height_tree_module import get_ancestors, solve_cnf, visualize_tree
-from satree.classification.classification_core import compute_ordering_with_categorical
+from satree.classification.min_height_tree_module import solve_cnf, visualize_tree
 from satree.treemodder.builder import build_complete_tree, create_literals
-from classification_clauses import add_clauses_for_features_and_paths, add_feature_selection_clauses_for_branching_nodes
+from satree.classification.classification_clauses import add_clauses_for_features_and_paths, add_feature_selection_clauses_for_branching_nodes
 
 
 # Caluses builder for dataeest with cateorgoialc features

@@ -9,7 +9,7 @@ import numpy as np
 from satree.treemodder.builder import build_complete_tree
 from satree.clustering.clustering_advanced import solve_wcnf_clustering, create_distance_classes, assign_clusters_and_diameters
 from satree.clustering.core import create_literals_cluster_tree, create_literal_matrices_modular
-from clustering_clauses import construct_clustering_clauses, add_clustering_encodings, add_distance_class_clauses
+from satree.clustering.clustering_clauses import construct_clustering_clauses, add_clustering_encodings, add_distance_class_clauses
 
 
 def build_clauses_cluster_tree_MD_MS(literals, X, TB, TL, num_features, k_clusters,
