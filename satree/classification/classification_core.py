@@ -48,3 +48,28 @@ def get_ancestors(node_index, side):
 def compute_ordering(X, feature_index):
     sorted_indices = sorted(range(len(X)), key=lambda i: X[i][feature_index])
     return [(sorted_indices[i], sorted_indices[i + 1]) for i in range(len(sorted_indices) - 1)]
+
+
+def compute_numerical_threshold(feature_values, node_index, get_literal_value):
+    """
+    Computes the threshold for a numerical feature based on when the literal direction changes.
+
+    Parameters:
+      - feature_values (np.array): An array of values for a particular feature.
+      - node_index (int): The index of the current node.
+      - get_literal_value (function): A function that accepts a literal (string) and returns its value
+                                      in the model solution.
+
+    Returns:
+      - threshold (float or None): The computed threshold as the average of the two consecutive feature
+                                   values where the sign change occurs. Returns None if no change is found.
+    """
+    sorted_indices = np.argsort(feature_values)
+    threshold = None
+    for i in range(1, len(sorted_indices)):
+        left_index = sorted_indices[i - 1]
+        right_index = sorted_indices[i]
+        if get_literal_value(f's_{left_index}_{node_index}') > 0 and get_literal_value(f's_{right_index}_{node_index}') < 0:
+            threshold = (feature_values[left_index] + feature_values[right_index]) / 2
+            break
+    return threshold

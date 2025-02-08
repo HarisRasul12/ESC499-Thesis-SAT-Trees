@@ -103,6 +103,58 @@ class SATreeCraft:
 
     ##### Categorical Classfication Problems ####
 
+
+    def apply_oblivious_constraints_and_solve(self, cnf, features, depth, literals, dataset, tree, TL, labels,
+                                              use_loandra, loandra_path=None, execution_path=None):
+        """
+        Applies oblivious tree constraints to the CNF and then solves it using either the Loandra-based solver
+        or the standard SAT solver.
+
+        Parameters:
+            cnf: The CNF (list of clauses) to be processed.
+            features: The feature set.
+            depth: The current depth.
+            literals: The literals generated for the tree.
+            dataset: The dataset.
+            tree: The current tree structure.
+            TL: The tree's leaves (or additional tree information needed by the solver).
+            labels: The labels.
+            use_loandra (bool): Whether to use Loandra for solving.
+            loandra_path (optional): Path to the Loandra executable (if use_loandra is True).
+            execution_path (optional): Path to write the CNF file (if use_loandra is True).
+
+        Returns:
+            solution: The solution (transformed if using Loandra).
+            cost: The cost from the Loandra solver (or None for standard solving).
+            cnf: The updated CNF (after adding constraints).
+        """
+        # Add oblivious tree constraints.
+        cnf = add_oblivious_tree_constraints(cnf, features, depth, literals, dataset, self.tree_structure)
+
+        if use_loandra:
+            # --- LOANDRA PATH ---
+            # Convert the CNF into a WCNF (weighted CNF) as expected by Loandra.
+            wcnf = WCNF()
+            for clause in cnf:
+                wcnf.append(clause)
+            wcnf.to_file(execution_path)
+
+            solution, cost = run_loandra_and_parse_results(loandra_path, execution_path)
+            # If the cost is non-zero, no valid solution was found.
+            if cost != 0:
+                solution = "No solution exists"
+
+            if solution != "No solution exists":
+                # Transform the solution from Loandra to our internal format.
+                solution = transform_tree_from_loandra(solution, literals, TL, tree, labels, features, dataset)
+        else:
+            # --- STANDARD SAT SOLVER PATH ---
+            solution = solve_cnf(cnf, literals, TL, tree, labels, features, dataset)
+            cost = None
+
+        return solution, cost, cnf
+
+
     def find_min_depth_tree_categorical_problem(self, features, features_categorical, features_numerical, labels,
                                                 true_labels_for_points, dataset, use_loandra=False,
                                                 loandra_path=None, execution_path=None):
@@ -120,27 +172,10 @@ class SATreeCraft:
                                             features_numerical, labels, true_labels_for_points)
 
             # Add oblivious tree constraints (if used)
-            cnf = add_oblivious_tree_constraints(cnf, features, depth, literals, dataset, self.tree_structure)
-
-            if use_loandra:
-                # --- LOANDRA PATH ---
-                # Convert the CNF into a WCNF (weighted CNF) as expected by loandra
-                wcnf = WCNF()
-                for clause in cnf:
-                    wcnf.append(clause)
-                wcnf.to_file(execution_path)
-
-                solution, cost = run_loandra_and_parse_results(loandra_path, execution_path)
-                # If the cost is non-zero, no valid solution was found
-                if cost != 0:
-                    solution = "No solution exists"
-
-                if solution != "No solution exists":
-                    # Transform the solution from loandra to our internal format
-                    solution = transform_tree_from_loandra(solution, literals, TL, tree, labels, features, dataset)
-            else:
-                # --- STANDARD SAT SOLVER PATH ---
-                solution = solve_cnf(cnf, literals, TL, tree, labels, features, dataset)
+            solution, cost, cnf = self.apply_oblivious_constraints_and_solve(
+                cnf, features, depth, literals, dataset, tree, TL, labels,
+                use_loandra, loandra_path, execution_path
+            )
 
             if solution != "No solution exists":
                 tree_with_thresholds = add_thresholds_categorical(tree, literals, solution, dataset, features_categorical)
@@ -175,21 +210,10 @@ class SATreeCraft:
         wcnf = build_clauses_categorical_fixed(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels, true_labels_for_points)
 
         # Add the min support constraint if applicable
-        if self.min_support > 0:
-            wcnf = min_support(wcnf, literals, dataset, TL, self.min_support)
-
-        # Add the oblivious tree constraints (assuming tree_structure is a class attribute)
-        wcnf = add_oblivious_tree_constraints(wcnf, features, depth, literals, dataset, self.tree_structure)
-
-        # Branch based on loandra usage
-        if use_loandra:
-            # LOANDRA: Export the CNF to file, run loandra, and transform the solution back
-            wcnf.to_file(execution_path)
-            solution, cost = run_loandra_and_parse_results(loandra_path, execution_path)
-            solution = transform_tree_from_loandra(solution, literals, TL, tree, labels, features, dataset)
-        else:
-            # Standard SAT solving
-            solution, cost = solve_wcnf(wcnf, literals, TL, tree, labels, features, dataset)
+        solution, cost, wcnf = self.finalize_and_solve_wcnf(
+            wcnf, literals, dataset, TL, features, depth, tree, labels,
+            use_loandra, loandra_path, execution_path
+        )
 
         # If a solution was found, add thresholds and generate a visualization
         if solution != "No solution exists":
@@ -223,25 +247,10 @@ class SATreeCraft:
             cnf = build_clauses(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
 
             # Oblivious Tree Constraints addition if ever used
-            cnf = add_oblivious_tree_constraints(cnf, features, depth, literals, dataset, self.tree_structure)
-
-            if use_loandra:
-                # --- LOANDRA SUPPORT ---
-                # Convert CNF to WCNF for loandra (all clauses treated as hard)
-                wcnf = WCNF()
-                for clause in cnf:
-                    wcnf.append(clause)
-                wcnf.to_file(execution_path)
-
-                solution, cost = run_loandra_and_parse_results(loandra_path, execution_path)
-                # If cost is non-zero, no valid solution was found.
-                if cost != 0:
-                    solution = "No solution exists"
-                if solution != "No solution exists":
-                    solution = transform_tree_from_loandra(solution, literals, TL, tree, labels, features, dataset)
-            else:
-                # --- STANDARD SAT SOLVER PATH ---
-                solution = solve_cnf(cnf, literals, TL, tree, labels, features, dataset)
+            solution, cost, cnf = self.apply_oblivious_constraints_and_solve(
+                cnf, features, depth, literals, dataset, tree, TL, labels,
+                use_loandra, loandra_path, execution_path
+            )
 
             if solution != "No solution exists":
                 tree_with_thresholds = add_thresholds(tree, literals, solution, dataset)
@@ -257,6 +266,49 @@ class SATreeCraft:
                 depth += 1  # Increase the depth and try again
 
         return tree_with_thresholds, literals, depth, solution, cnf
+
+
+    def finalize_and_solve_wcnf(self, wcnf, literals, dataset, TL, features, depth, tree, labels,
+                                use_loandra, loandra_path=None, execution_path=None):
+        """
+        Applies the min support and oblivious tree constraints to the given WCNF and then solves it.
+
+        Parameters:
+          - wcnf: The weighted CNF to be solved.
+          - literals: The literals generated for the problem.
+          - dataset: The dataset.
+          - TL: The tree leaves (or other tree-related info) needed for solving.
+          - features: The feature set.
+          - depth: The current depth.
+          - tree: The tree structure.
+          - labels: The label set.
+          - use_loandra (bool): Flag indicating whether to use Loandra for solving.
+          - loandra_path (optional): The path to the Loandra executable (required if use_loandra is True).
+          - execution_path (optional): The path to write the CNF file for Loandra.
+
+        Returns:
+          - solution: The solution obtained (or transformed) by the solver.
+          - cost: The cost (if applicable; None for the standard solver).
+          - wcnf: The final WCNF after constraints have been applied.
+        """
+        # Apply min support constraint if specified.
+        if self.min_support > 0:
+            wcnf = min_support(wcnf, literals, dataset, TL, self.min_support)
+
+        # Add oblivious tree constraints.
+        wcnf = add_oblivious_tree_constraints(wcnf, features, depth, literals, dataset, self.tree_structure)
+
+        # Solve using either Loandra or the standard solver.
+        if use_loandra:
+            # --- LOANDRA BRANCH ---
+            wcnf.to_file(execution_path)
+            solution, cost = run_loandra_and_parse_results(loandra_path, execution_path)
+            solution = transform_tree_from_loandra(solution, literals, TL, tree, labels, features, dataset)
+        else:
+            # --- STANDARD SOLVER BRANCH ---
+            solution, cost = solve_wcnf(wcnf, literals, TL, tree, labels, features, dataset)
+
+        return solution, cost, wcnf
 
 
     def find_fixed_depth_tree_problem(self, features, labels, true_labels_for_points, dataset, depth,
@@ -280,21 +332,10 @@ class SATreeCraft:
             wcnf = build_clauses_fixed_tree(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
 
         # Apply min support constraint if specified.
-        if self.min_support > 0:
-            wcnf = min_support(wcnf, literals, dataset, TL, self.min_support)
-
-        # Add oblivious tree constraints if used.
-        wcnf = add_oblivious_tree_constraints(wcnf, features, depth, literals, dataset, self.tree_structure)
-
-        # Depending on the flag, either solve with Loandra or use the standard solver.
-        if use_loandra:
-            # --- LOANDRA BRANCH ---
-            wcnf.to_file(execution_path)
-            solution, cost = run_loandra_and_parse_results(loandra_path, execution_path)
-            solution = transform_tree_from_loandra(solution, literals, TL, tree, labels, features, dataset)
-        else:
-            # --- STANDARD SOLVER BRANCH ---
-            solution, cost = solve_wcnf(wcnf, literals, TL, tree, labels, features, dataset)
+        solution, cost, wcnf = self.finalize_and_solve_wcnf(
+            wcnf, literals, dataset, TL, features, depth, tree, labels,
+            use_loandra, loandra_path, execution_path
+        )
 
         # Process the solution if one was found.
         if solution != "No solution exists":

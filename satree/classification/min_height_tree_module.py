@@ -5,11 +5,11 @@ Module to build the complete minimum depth tree and create literals. This module
 compared to the original paper and should be tested on test accuracy later.
 """
 
-import numpy as np
 from graphviz import Digraph
 from pysat.formula import CNF
 from pysat.solvers import Solver
 
+from satree.classification.classification_core import compute_numerical_threshold
 from satree.treemodder.builder import build_complete_tree, create_literals
 from satree.classification.classification_clauses import add_redundant_constraints, construct_maxsat_clauses
 
@@ -106,7 +106,8 @@ def solve_cnf(cnf, literals, TL, tree_structure, labels,features,datasetX):
         #print("no solution!")
         return "No solution exists"
 
-#adjusted Logic to compute threshold on the entire dataset at each feature node branch 
+
+#adjusted Logic to compute threshold on the entire dataset at each feature node branch
 def add_thresholds(tree_structure, literals, model_solution, dataset):
     """
     Compute the threshold for each branching node in the tree structure
@@ -122,43 +123,26 @@ def add_thresholds(tree_structure, literals, model_solution, dataset):
     - tree_structure (list): The updated tree structure with thresholds set for branching nodes.
     """
     def get_literal_value(literal):
-        # Helper function to get the value of a literal from the model solution.
         return literals[literal] if literals[literal] in model_solution else -literals[literal]
 
     def set_thresholds(node_index, dataset):
         node = tree_structure[node_index]
         if node['type'] == 'branching':
             feature_index = int(node['feature'])
-
-            # Instead of using the dataset_indices, we will compute the threshold based on the entire dataset.
             feature_values = dataset[:, feature_index]
-            sorted_indices = np.argsort(feature_values)
+            # Use the helper function to compute the threshold.
+            node['threshold'] = compute_numerical_threshold(feature_values, node_index, get_literal_value)
 
-            # Initialize the threshold
-            threshold = None
-
-            # Find the first instance where the direction changes and set the threshold.
-            for i in range(1, len(sorted_indices)):
-                left_index = sorted_indices[i - 1]
-                right_index = sorted_indices[i]
-                if get_literal_value(f's_{left_index}_{node_index}') > 0 and get_literal_value(f's_{right_index}_{node_index}') < 0:
-                    threshold = (feature_values[left_index] + feature_values[right_index]) / 2
-                    break
-
-            # If no change in direction is found, threshold remains None.
-            node['threshold'] = threshold
-            
-            # Continue for children nodes
+            # Continue for children nodes.
             left_child_index, right_child_index = node['children'][0], node['children'][1]
-            if left_child_index < len(tree_structure): # Check index is within bounds
+            if left_child_index < len(tree_structure):
                 set_thresholds(left_child_index, dataset)
-            if right_child_index < len(tree_structure): # Check index is within bounds
+            if right_child_index < len(tree_structure):
                 set_thresholds(right_child_index, dataset)
 
-    # Apply the threshold setting function starting from the root node
     set_thresholds(0, dataset)
-
     return tree_structure
+
 
 # visualization code
 def add_nodes(dot, tree, node_index=0):

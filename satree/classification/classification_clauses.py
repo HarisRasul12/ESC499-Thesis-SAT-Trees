@@ -1,5 +1,28 @@
 from satree.classification.classification_core import compute_ordering_with_categorical, get_ancestors, compute_ordering
 
+def append_direction_clauses(cnf, literals, t, j, i_index, ip_index, append_both=False):
+    """
+    Appends direction clauses for a given branching node and feature.
+
+    This function appends:
+      - Clause 1: [-a_{t}_{j}, s_{i_index}_{t}, -s_{ip_index}_{t}]
+      - Clause 2: [-a_{t}_{j}, -s_{i_index}_{t}, s_{ip_index}_{t}]
+        (this second clause is appended only if append_both is True)
+
+    Args:
+        cnf (list): The CNF (list of clauses) to which the new clauses will be appended.
+        literals (dict): A dictionary mapping literal names (as strings) to their variable indices.
+        t (int): The index of the current branching node.
+        j (int): The feature index.
+        i_index (int): The index of the left data point.
+        ip_index (int): The index of the right data point.
+        append_both (bool): If True, both clauses will be appended; if False, only the first clause is appended.
+    """
+    cnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i_index}_{t}'], -literals[f's_{ip_index}_{t}']])
+    if append_both:
+        cnf.append([-literals[f'a_{t}_{j}'], -literals[f's_{i_index}_{t}'], literals[f's_{ip_index}_{t}']])
+
+
 def add_data_point_clauses(cnf, literals, X, TB, TL, num_features):
     """
     Adds data point direction and path validity clauses to the CNF object.
@@ -24,11 +47,10 @@ def add_data_point_clauses(cnf, literals, X, TB, TL, num_features):
         for (i, ip) in Oj:
             if X[i][j] < X[ip][j]:  # Different feature values (Clause 3)
                 for t in TB:
-                    cnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i}_{t}'], -literals[f's_{ip}_{t}']])
+                    append_direction_clauses(cnf, literals, t, j, i, ip, append_both=False)
             if X[i][j] == X[ip][j]:  # Equal feature values (Clause 4)
                 for t in TB:
-                    cnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i}_{t}'], -literals[f's_{ip}_{t}']])
-                    cnf.append([-literals[f'a_{t}_{j}'], -literals[f's_{i}_{t}'], literals[f's_{ip}_{t}']])
+                    append_direction_clauses(cnf, literals, t, j, i, ip, append_both=True)
 
     cnf = add_path_validity_and_deviation_clauses(cnf, literals, X, TL)
 
@@ -185,10 +207,9 @@ def add_clauses_for_features_and_paths(cnf, literals, X, TB, TL, num_features, f
                 else:
                     # Clause (16) and (17) for numerical features
                     if float(X[i_index, j]) < float(X[ip_index, j]):
-                        cnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i_index}_{t}'], -literals[f's_{ip_index}_{t}']])
+                        append_direction_clauses(cnf, literals, t, j, i_index, ip_index, append_both=False)
                     if float(X[i_index, j]) == float(X[ip_index, j]):
-                        cnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i_index}_{t}'], -literals[f's_{ip_index}_{t}']])
-                        cnf.append([-literals[f'a_{t}_{j}'], -literals[f's_{i_index}_{t}'], literals[f's_{ip_index}_{t}']])
+                        append_direction_clauses(cnf, literals, t, j, i_index, ip_index, append_both=True)
 
     cnf = add_path_validity_and_deviation_clauses(cnf, literals, X, TL)
 

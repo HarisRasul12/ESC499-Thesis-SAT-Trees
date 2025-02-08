@@ -7,6 +7,7 @@ Base module to help solve SAT problems with categorical and numerical features.
 import numpy as np
 from pysat.formula import CNF
 
+from satree.classification.classification_core import compute_numerical_threshold
 from satree.classification.min_height_tree_module import solve_cnf, visualize_tree
 from satree.treemodder.builder import build_complete_tree, create_literals
 from satree.classification.classification_clauses import add_clauses_for_features_and_paths, add_feature_selection_clauses_for_branching_nodes
@@ -42,6 +43,7 @@ def build_clauses_categorical(literals, X, TB, TL, num_features, features_catego
     
     return cnf
 
+
 #adjusted Logic to compute threshold on the entire dataset at each feature node branch and categorical feature 
 def add_thresholds_categorical(tree_structure, literals, model_solution, dataset, features_categorical):
     def get_literal_value(literal):
@@ -52,37 +54,29 @@ def add_thresholds_categorical(tree_structure, literals, model_solution, dataset
         if node['type'] == 'branching':
             feature_index = int(node['feature'])
             is_categorical = str(feature_index) in features_categorical
-            
+
             if is_categorical:
-                # For categorical features, list the unique values that went left
+                # For categorical features, list the unique values that went left.
                 categories_that_went_left = set()
                 for i, data_point in enumerate(dataset):
                     if get_literal_value(f's_{i}_{node_index}') > 0:
                         categories_that_went_left.add(data_point[feature_index])
                 node['threshold'] = sorted(list(categories_that_went_left))
             else:
-                # For numerical features, use the existing logic to find the threshold
+                # For numerical features, use the helper function.
                 feature_values = dataset[:, feature_index].astype(float)
-                sorted_indices = np.argsort(feature_values)
-                threshold = None
-                for i in range(1, len(sorted_indices)):
-                    left_index = sorted_indices[i - 1]
-                    right_index = sorted_indices[i]
-                    if get_literal_value(f's_{left_index}_{node_index}') > 0 and get_literal_value(f's_{right_index}_{node_index}') < 0:
-                        threshold = (feature_values[left_index] + feature_values[right_index]) / 2
-                        break
-                node['threshold'] = threshold
-            
-            # Continue for children nodes
+                node['threshold'] = compute_numerical_threshold(feature_values, node_index, get_literal_value)
+
+            # Continue for children nodes.
             left_child_index, right_child_index = node['children'][0], node['children'][1]
             if left_child_index < len(tree_structure):
                 set_thresholds_categorical(left_child_index, dataset)
             if right_child_index < len(tree_structure):
                 set_thresholds_categorical(right_child_index, dataset)
 
-    # Apply the threshold setting function starting from the root node
     set_thresholds_categorical(0, dataset)
     return tree_structure
+
 
 def find_min_depth_tree_categorical(features, features_categorical, features_numerical, labels, true_labels_for_points, dataset):
     depth = 1  # Start with a depth of 1
