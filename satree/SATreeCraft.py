@@ -10,6 +10,7 @@ This library provides tools for solving classification problems using SAT-based 
 The library works with datasets containing both categorical and numerical features.
 """
 
+from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 from pysat.formula import WCNF
@@ -101,69 +102,115 @@ class SATreeCraft:
         self.cluster_diameters = None
 
     ##### Categorical Classfication Problems ####
-        
-    def find_min_depth_tree_categorical_problem(self, features, features_categorical, features_numerical, labels, true_labels_for_points, dataset):
+
+    def find_min_depth_tree_categorical_problem(self, features, features_categorical, features_numerical, labels,
+                                                true_labels_for_points, dataset, use_loandra=False,
+                                                loandra_path=None, execution_path=None):
         depth = 1  # Start with a depth of 1
         solution = "No solution exists"
         tree_with_thresholds = None
         tree = None
         literals = None
 
+        # Try increasing depths until a solution is found
         while solution == "No solution exists":
             tree, TB, TL = build_complete_tree(depth)
             literals = create_literals(TB, TL, features, labels, len(dataset), False)[0]
-            cnf = build_clauses_categorical(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels, true_labels_for_points)
+            cnf = build_clauses_categorical(literals, dataset, TB, TL, len(features), features_categorical,
+                                            features_numerical, labels, true_labels_for_points)
 
-            # Oblivious Tree Constraints addition if ever used
+            # Add oblivious tree constraints (if used)
             cnf = add_oblivious_tree_constraints(cnf, features, depth, literals, dataset, self.tree_structure)
 
-            solution = solve_cnf(cnf, literals, TL, tree, labels, features, dataset)
-            
+            if use_loandra:
+                # --- LOANDRA PATH ---
+                # Convert the CNF into a WCNF (weighted CNF) as expected by loandra
+                wcnf = WCNF()
+                for clause in cnf:
+                    wcnf.append(clause)
+                wcnf.to_file(execution_path)
+
+                solution, cost = run_loandra_and_parse_results(loandra_path, execution_path)
+                # If the cost is non-zero, no valid solution was found
+                if cost != 0:
+                    solution = "No solution exists"
+
+                if solution != "No solution exists":
+                    # Transform the solution from loandra to our internal format
+                    solution = transform_tree_from_loandra(solution, literals, TL, tree, labels, features, dataset)
+            else:
+                # --- STANDARD SAT SOLVER PATH ---
+                solution = solve_cnf(cnf, literals, TL, tree, labels, features, dataset)
+
             if solution != "No solution exists":
                 tree_with_thresholds = add_thresholds_categorical(tree, literals, solution, dataset, features_categorical)
                 dot = visualize_tree(tree_with_thresholds)
-                dot.render(f'images/min_height/binary_decision_tree_min_depth_with_categorical_features_depth_{depth}', format='png', cleanup=True)
+                folder = Path('images/min_height/')
+                folder.mkdir(parents=True, exist_ok=True)
+                if use_loandra:
+                    dot.render(folder / f'LOANDRA_SOLVED_binary_decision_tree_min_depth_with_categorical_features_depth_{depth}',
+                               format='png', cleanup=True)
+                else:
+                    dot.render(folder / f'binary_decision_tree_min_depth_with_categorical_features_depth_{depth}',
+                               format='png', cleanup=True)
             else:
                 print("No solution at depth: ", depth)
                 depth += 1  # Increase the depth and try again
-        
+
         return tree_with_thresholds, literals, depth, solution, cnf
-    
-    def find_fixed_depth_tree_categorical_problem(self, features, features_categorical, features_numerical, labels, true_labels_for_points, dataset, depth):
+
+
+    def find_fixed_depth_tree_categorical_problem(self, features, features_categorical, features_numerical, labels, true_labels_for_points, dataset, depth, use_loandra=False, loandra_path=None, execution_path=None):
         solution = "No solution exists"
         tree_with_thresholds = None
         tree = None
         literals = None
         cost = None
 
+        # Build the complete tree and generate literals
         tree, TB, TL = build_complete_tree(depth)
         literals = create_literals(TB, TL, features, labels, len(dataset), True)[0]
 
-        wcnf = build_clauses_categorical_fixed(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels,true_labels_for_points)
+        # Build the CNF clauses using the provided categorical fixed encoding
+        wcnf = build_clauses_categorical_fixed(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels, true_labels_for_points)
 
-        # Min support constraint can be added
-        if (self.min_support > 0):
+        # Add the min support constraint if applicable
+        if self.min_support > 0:
             wcnf = min_support(wcnf, literals, dataset, TL, self.min_support)
-        
-        # Oblivious Tree Structure Encodings enforced assuming not complete 
+
+        # Add the oblivious tree constraints (assuming tree_structure is a class attribute)
         wcnf = add_oblivious_tree_constraints(wcnf, features, depth, literals, dataset, self.tree_structure)
 
+        # Branch based on loandra usage
+        if use_loandra:
+            # LOANDRA: Export the CNF to file, run loandra, and transform the solution back
+            wcnf.to_file(execution_path)
+            solution, cost = run_loandra_and_parse_results(loandra_path, execution_path)
+            solution = transform_tree_from_loandra(solution, literals, TL, tree, labels, features, dataset)
+        else:
+            # Standard SAT solving
+            solution, cost = solve_wcnf(wcnf, literals, TL, tree, labels, features, dataset)
 
-        solution,cost = solve_wcnf(wcnf, literals, TL, tree, labels, features, dataset)
-        
+        # If a solution was found, add thresholds and generate a visualization
         if solution != "No solution exists":
             tree_with_thresholds = add_thresholds_categorical(tree, literals, solution, dataset, features_categorical)
             dot = visualize_tree(tree_with_thresholds)
-            dot.render(f'images/fixed_height/binary_decision_tree_fixed_with_categorical_features_depth_{depth}', format='png', cleanup=True)
+            folder = Path('images/fixed_height/')
+            folder.mkdir(parents=True, exist_ok=True)
+            if use_loandra:
+                dot.render(folder / f'LOANDRA_SOLVED_binary_decision_tree_fixed_with_categorical_features_depth_{depth}', format='png', cleanup=True)
+            else:
+                dot.render(folder / f'binary_decision_tree_fixed_with_categorical_features_depth_{depth}', format='png', cleanup=True)
         else:
             print('could not find solution')
             return 'No solution'
-        
+
         return tree_with_thresholds, literals, depth, solution, cost, wcnf
 
     #### Numerical Classification Problems ####
-    
-    def find_min_depth_tree_problem(self, features, labels, true_labels_for_points, dataset):
+
+    def find_min_depth_tree_problem(self, features, labels, true_labels_for_points, dataset,
+                                    use_loandra=False, loandra_path=None, execution_path=None):
         depth = 1  # Start with a depth of 1
         solution = "No solution exists"
         tree_with_thresholds = None
@@ -174,56 +221,95 @@ class SATreeCraft:
             tree, TB, TL = build_complete_tree(depth)
             literals = create_literals(TB, TL, features, labels, len(dataset), False)[0]
             cnf = build_clauses(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
-            
-            # Oblivious Tree Constraints addition if ever used 
+
+            # Oblivious Tree Constraints addition if ever used
             cnf = add_oblivious_tree_constraints(cnf, features, depth, literals, dataset, self.tree_structure)
 
-            solution = solve_cnf(cnf, literals, TL, tree, labels, features, dataset)
-            
+            if use_loandra:
+                # --- LOANDRA SUPPORT ---
+                # Convert CNF to WCNF for loandra (all clauses treated as hard)
+                wcnf = WCNF()
+                for clause in cnf:
+                    wcnf.append(clause)
+                wcnf.to_file(execution_path)
+
+                solution, cost = run_loandra_and_parse_results(loandra_path, execution_path)
+                # If cost is non-zero, no valid solution was found.
+                if cost != 0:
+                    solution = "No solution exists"
+                if solution != "No solution exists":
+                    solution = transform_tree_from_loandra(solution, literals, TL, tree, labels, features, dataset)
+            else:
+                # --- STANDARD SAT SOLVER PATH ---
+                solution = solve_cnf(cnf, literals, TL, tree, labels, features, dataset)
+
             if solution != "No solution exists":
                 tree_with_thresholds = add_thresholds(tree, literals, solution, dataset)
                 dot = visualize_tree(tree_with_thresholds)
-                dot.render(f'images/min_height/binary_decision_tree_min_depth_{depth}', format='png', cleanup=True)
+                folder = Path('images/min_height/')
+                folder.mkdir(parents=True, exist_ok=True)  # Ensure the directory exists
+                if use_loandra:
+                    dot.render(folder / f'LOANDRA_SOLVED_binary_decision_tree_min_depth_{depth}', format='png', cleanup=True)
+                else:
+                    dot.render(folder / f'binary_decision_tree_min_depth_{depth}', format='png', cleanup=True)
             else:
                 print('no solution at depth', depth)
                 depth += 1  # Increase the depth and try again
-        
+
         return tree_with_thresholds, literals, depth, solution, cnf
-    
-    def find_fixed_depth_tree_problem(self, features, labels, true_labels_for_points, dataset,depth):
+
+
+    def find_fixed_depth_tree_problem(self, features, labels, true_labels_for_points, dataset, depth,
+                                      use_loandra=False, loandra_path=None, execution_path=None):
         solution = "No solution exists"
         tree_with_thresholds = None
         tree = None
         literals = None
         cost = None
 
+        # Build the complete tree and create the literals.
         tree, TB, TL = build_complete_tree(depth)
         literals = create_literals(TB, TL, features, labels, len(dataset), True)[0]
 
-        # min margin constraint - only for numerical problem 
-        if (self.min_margin > 1):
-            wcnf = build_clauses_fixed_tree_min_margin_constraint_add(literals, dataset, TB, TL, len(features), labels, true_labels_for_points, self.min_margin)
-    
+        # Apply min margin constraint (only for numerical problems).
+        if self.min_margin > 1:
+            wcnf = build_clauses_fixed_tree_min_margin_constraint_add(
+                literals, dataset, TB, TL, len(features), labels, true_labels_for_points, self.min_margin
+            )
         else:
             wcnf = build_clauses_fixed_tree(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
 
-        # min support constraint 
-        if (self.min_support > 0):
+        # Apply min support constraint if specified.
+        if self.min_support > 0:
             wcnf = min_support(wcnf, literals, dataset, TL, self.min_support)
 
-        # Oblivious Tree Constraints addition if ever used
+        # Add oblivious tree constraints if used.
         wcnf = add_oblivious_tree_constraints(wcnf, features, depth, literals, dataset, self.tree_structure)
 
-        solution,cost = solve_wcnf(wcnf, literals, TL, tree, labels, features, dataset)
-        
+        # Depending on the flag, either solve with Loandra or use the standard solver.
+        if use_loandra:
+            # --- LOANDRA BRANCH ---
+            wcnf.to_file(execution_path)
+            solution, cost = run_loandra_and_parse_results(loandra_path, execution_path)
+            solution = transform_tree_from_loandra(solution, literals, TL, tree, labels, features, dataset)
+        else:
+            # --- STANDARD SOLVER BRANCH ---
+            solution, cost = solve_wcnf(wcnf, literals, TL, tree, labels, features, dataset)
+
+        # Process the solution if one was found.
         if solution != "No solution exists":
             tree_with_thresholds = add_thresholds(tree, literals, solution, dataset)
             dot = visualize_tree(tree_with_thresholds)
-            dot.render(f'images/fixed_height/binary_decision_tree_fixed_depth_{depth}', format='png', cleanup=True)
+            folder = Path('images/fixed_height/')
+            folder.mkdir(parents=True, exist_ok=True)
+            if use_loandra:
+                dot.render(folder / f'LOANDRA_SOLVED_binary_decision_tree_fixed_depth_{depth}', format='png', cleanup=True)
+            else:
+                dot.render(folder / f'binary_decision_tree_fixed_depth_{depth}', format='png', cleanup=True)
         else:
             print('could not find solution')
             return 'No solution'
-        
+
         return tree_with_thresholds, literals, depth, solution, cost, wcnf
 
 
@@ -244,9 +330,10 @@ class SATreeCraft:
         - full_path (str): The path to the saved plot image.
         """
         # Define the directory and filename
-        directory = 'images/cluster_trees/'
+        directory = Path('images/cluster_trees/')
+        directory.mkdir(parents=True, exist_ok=True)  # Ensure the directory exists
         filename = f'cluster_tree_with_cluster_size{k_clusters}.png'
-        full_path = directory + filename
+        full_path = directory / filename
 
         # Create the plot
         fig, axes = plt.subplots(1, 2, figsize=(12, 6))
@@ -283,59 +370,92 @@ class SATreeCraft:
         plt.close(fig)  # Close the figure to prevent it from displaying in the output
         return full_path
 
-    def solve_clustering_problem_max_diameter(self, dataset,features,k_clusters, depth, epsilon, CL_pairs, ML_pairs):
+    def solve_clustering_problem_max_diameter(self, dataset, features, k_clusters, depth, epsilon, CL_pairs, ML_pairs,
+                                              use_loandra=False, loandra_path=None, execution_path=None):
         dataset_size = len(dataset)
         num_features = len(features)
         dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
         tree_structure, TB, TL = build_complete_tree(depth)
-        
-        literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size,distance_classes, False)
-        
+
+        literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size, distance_classes, False)
         wcnf = build_clauses_cluster_tree_MD(literals, dataset, TB, TL, num_features, k_clusters,
-                                    CL_pairs, ML_pairs, distance_classes)
-    
-        solution = solve_wcnf_clustering(wcnf)
-        a_matrix, s_matrix, z_matrix, g_matrix, x_i_c_matrix, bw_m_vector = create_literal_matrices_modular(literals=literals,
-                                                                                                    solution=solution,
-                                                                                                    dataset_size=len(dataset),
-                                                                                                    k_clusters=k_clusters,
-                                                                                                    TB=TB,
-                                                                                                    TL=TL,
-                                                                                                    num_features=len(features),
-                                                                                                    distance_classes= distance_classes,
-                                                                                                    bicriteria=False
-                                                                                                    )
+                                             CL_pairs, ML_pairs, distance_classes)
+
+        if use_loandra:
+            # --- LOANDRA PATH ---
+            wcnf.to_file(execution_path)
+            solution, cost = run_loandra_and_parse_results(loandra_path, execution_path)
+        else:
+            # --- STANDARD SOLVER PATH ---
+            solution = solve_wcnf_clustering(wcnf)
+
+        a_matrix, s_matrix, z_matrix, g_matrix, x_i_c_matrix, bw_m_vector = create_literal_matrices_modular(
+            literals=literals,
+            solution=solution,
+            dataset_size=len(dataset),
+            k_clusters=k_clusters,
+            TB=TB,
+            TL=TL,
+            num_features=len(features),
+            distance_classes=distance_classes,
+            bicriteria=False
+        )
         cluster_assignments, cluster_diameters = assign_clusters_and_diameters(x_i_c_matrix, dataset, k_clusters)
-        if (len(self.features) <= 2):
+
+        if len(self.features) <= 2:
             self.plot_and_save_clusters_to_drive(dataset, cluster_assignments, k_clusters)
+
         return cluster_assignments, cluster_diameters, literals, solution
 
 
-    def solve_clustering_problem_bicriteria(self, dataset,features, k_clusters, depth, epsilon, CL_pairs, ML_pairs):
+    def solve_clustering_problem_bicriteria(self, dataset, features, k_clusters, depth, epsilon, CL_pairs, ML_pairs,
+                                            use_loandra=False, loandra_path=None, execution_path=None):
         dataset_size = len(dataset)
         num_features = len(features)
         dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
         tree_structure, TB, TL = build_complete_tree(depth)
-        
+
+        # Create the literals with bicriteria flag True.
         literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size, distance_classes, True)
-       
+
+        # Build the WCNF using smart pairs if enabled.
         if self.smart_pairs:
             wcnf = build_clauses_cluster_tree_MD_MS_Smart_Pair(literals, dataset, TB, TL, num_features, k_clusters,
-                                    CL_pairs, ML_pairs, distance_classes)
+                                                               CL_pairs, ML_pairs, distance_classes)
         else:
             wcnf = build_clauses_cluster_tree_MD_MS(literals, dataset, TB, TL, num_features, k_clusters,
-                                    CL_pairs, ML_pairs, distance_classes)
+                                                    CL_pairs, ML_pairs, distance_classes)
 
+        if use_loandra:
+            # --- LOANDRA BRANCH ---
+            wcnf.to_file(execution_path)
+            solution, cost = run_loandra_and_parse_results(loandra_path, execution_path)
 
-        cluster_assignments, cluster_diameters, solution = process_clustering_solution(wcnf, literals, dataset, features, k_clusters, TB, TL, distance_classes)
+            # Process the solution by creating literal matrices in bicriteria mode.
+            a_matrix, s_matrix, z_matrix, g_matrix, x_i_c_matrix, bw_m_vector, bw_p_vector = create_literal_matrices_modular(
+                literals=literals,
+                solution=solution,
+                dataset_size=len(dataset),
+                k_clusters=k_clusters,
+                TB=TB,
+                TL=TL,
+                num_features=len(features),
+                distance_classes=distance_classes,
+                bicriteria=True
+            )
+            cluster_assignments, cluster_diameters = assign_clusters_and_diameters(x_i_c_matrix, dataset, k_clusters)
+        else:
+            # --- STANDARD (NON-LOANDRA) BRANCH ---
+            cluster_assignments, cluster_diameters, solution = process_clustering_solution(
+                wcnf, literals, dataset, features, k_clusters, TB, TL, distance_classes
+            )
 
-
-        if (len(self.features) <= 2):
+        # Optionally plot clusters if there are two or fewer features.
+        if len(self.features) <= 2:
             self.plot_and_save_clusters_to_drive(dataset, cluster_assignments, k_clusters)
-        # print(x_i_c_matrix)
-        # print(literals)
-        return cluster_assignments, cluster_diameters, literals, solution         
-    
+
+        return cluster_assignments, cluster_diameters, literals, solution
+
     #### SAT Solving given problem ####
     def solve(self):
         """
@@ -350,52 +470,77 @@ class SATreeCraft:
             if self.features_categorical is not None and len(self.features_categorical) > 0: # categorical feature dataset
                 
                 if self.classification_objective == 'min_height': # minimum height 100% accuracy on training problem
-                    self.model, self.final_literals, self.min_depth, self.sat_solution, self.final_cnf = self.find_min_depth_tree_categorical_problem(self.features, 
-                                                                                                              self.features_categorical, 
-                                                                                                              self.features_numerical, 
-                                                                                                              self.labels, self.true_labels_for_points, self.dataset)
+                    self.model, self.final_literals, self.min_depth, self.sat_solution, self.final_cnf = \
+                        self.find_min_depth_tree_categorical_problem(
+                            self.features,
+                            self.features_categorical,
+                            self.features_numerical,
+                            self.labels,
+                            self.true_labels_for_points,
+                            self.dataset,
+                            use_loandra=False
+                        )
                 else: # Max accuracy problem
-                    self.model, self.final_literals, self.fixed_depth, self.sat_solution, self.min_cost, self.final_cnf = self.find_fixed_depth_tree_categorical_problem(self.features, 
-                                                                                                              self.features_categorical, 
-                                                                                                              self.features_numerical, 
-                                                                                                              self.labels, 
-                                                                                                              self.true_labels_for_points, 
-                                                                                                              self.dataset, 
-                                                                                                              self.fixed_depth)
+                    self.model, self.final_literals, self.fixed_depth, self.sat_solution, self.min_cost, self.final_cnf = \
+                        self.find_fixed_depth_tree_categorical_problem(
+                            self.features,
+                            self.features_categorical,
+                            self.features_numerical,
+                            self.labels,
+                            self.true_labels_for_points,
+                            self.dataset,
+                            self.fixed_depth
+                        )
             else: # numerical feature dataset strictly
                 if self.classification_objective == 'min_height':
-                    self.model, self.final_literals, self.min_depth,self.sat_solution, self.final_cnf = self.find_min_depth_tree_problem(self.features, 
-                                                                                                                          self.labels, 
-                                                                                                                          self.true_labels_for_points, 
-                                                                                                                          self.dataset)
+                    self.model, self.final_literals, self.min_depth, self.sat_solution, self.final_cnf = \
+                        self.find_min_depth_tree_problem(
+                            self.features,
+                            self.labels,
+                            self.true_labels_for_points,
+                            self.dataset,
+                            use_loandra=False
+                        )
                 else: # max accuracy problem
-                    self.model, self.final_literals, self.fixed_depth, self.sat_solution, self.min_cost, self.final_cnf = self.find_fixed_depth_tree_problem(self.features, 
-                                                                                                               self.labels, 
-                                                                                                               self.true_labels_for_points, 
-                                                                                                               self.dataset,
-                                                                                                               self.fixed_depth)
+                    self.model, self.final_literals, self.fixed_depth, self.sat_solution, self.min_cost, self.final_cnf = \
+                        self.find_fixed_depth_tree_problem(
+                            self.features,
+                            self.labels,
+                            self.true_labels_for_points,
+                            self.dataset,
+                            self.fixed_depth,
+                            use_loandra=False
+                        )
         else:
             max_clusters = 2 ** self.fixed_depth
             if self.k_clusters > max_clusters:
                 raise ValueError(f"The assigned depth {self.fixed_depth} is not sufficient to accommodate {self.k_clusters} clusters.")
             
             if self.clustering_objective == 'max_diameter':
-                self.cluster_assignments, self.cluster_diameters, self.final_literals, self.sat_solution = self.solve_clustering_problem_max_diameter(self.dataset, 
-                                                                                                                                                    self.features, 
-                                                                                                                                                    self.k_clusters, 
-                                                                                                                                                    self.fixed_depth, 
-                                                                                                                                                    self.epsilon, 
-                                                                                                                                                    self.CL_pairs, 
-                                                                                                                                                    self.ML_pairs)
+                self.cluster_assignments, self.cluster_diameters, self.final_literals, self.sat_solution = \
+                    self.solve_clustering_problem_max_diameter(
+                        self.dataset,
+                        self.features,
+                        self.k_clusters,
+                        self.fixed_depth,
+                        self.epsilon,
+                        self.CL_pairs,
+                        self.ML_pairs,
+                        use_loandra=False
+                    )
             else: # Bicriteria
                 # print('solving bicriteria') 
-                self.cluster_assignments, self.cluster_diameters, self.final_literals, self.sat_solution = self.solve_clustering_problem_bicriteria(self.dataset, 
-                                                                                                                                                    self.features, 
-                                                                                                                                                    self.k_clusters, 
-                                                                                                                                                    self.fixed_depth, 
-                                                                                                                                                    self.epsilon, 
-                                                                                                                                                    self.CL_pairs, 
-                                                                                                                                                    self.ML_pairs)
+                self.cluster_assignments, self.cluster_diameters, self.final_literals, self.sat_solution = \
+                    self.solve_clustering_problem_bicriteria(
+                        self.dataset,
+                        self.features,
+                        self.k_clusters,
+                        self.fixed_depth,
+                        self.epsilon,
+                        self.CL_pairs,
+                        self.ML_pairs,
+                        use_loandra=False
+                    )
 
     ############################## LOANDRA Functionality Support for External SOLVING ###################################
     
@@ -406,6 +551,8 @@ class SATreeCraft:
         of the CNF with external solvers. The export is only available after solving the CNF. 
         Supports both weighted and non weighted cnf. 
         """
+        filename = Path(filename)
+        filename.parent.mkdir(parents=True, exist_ok=True)  # Ensure the directory exists
         if self.final_cnf:
             self.final_cnf.to_file(filename)
         else:
@@ -417,6 +564,8 @@ class SATreeCraft:
         of the CNF with external solvers. The export is only available after solving the CNF. 
         Supports both weighted and non weighted cnf. 
         """
+        filename = Path(filename)
+        filename.parent.mkdir(parents=True, exist_ok=True)  # Ensure the directory exists
         if self.final_cnf:
             wcnf = WCNF()
             for clause in self.final_cnf:
@@ -430,6 +579,8 @@ class SATreeCraft:
         Exports the final CNF formula to a file in DIMACS format. This allows for the use
         of the CNF with external solvers. Export before solving max accuracy problem.
         """
+        filename = Path(filename)
+        filename.parent.mkdir(parents=True, exist_ok=True)  # Ensure the directory exists
         if self.is_classification: # classifciation problem domain
                 if self.classification_objective != 'min_height': # minimum height 100% accuracy on training problem
                     
@@ -458,6 +609,8 @@ class SATreeCraft:
         Exports the CNF formula at a given depth k to a file in DIMACS format. 
         This allows for External solver support of the CNF problem.
         """
+        filename = Path(filename)
+        filename.parent.mkdir(parents=True, exist_ok=True)  # Ensure the directory exists
         if self.is_classification: # classifciation problem domain
                 if self.classification_objective == 'min_height': # minimum height 100% accuracy on training problem
                     solution = "No solution exists"
@@ -483,231 +636,6 @@ class SATreeCraft:
             ("Cannot export CNF ")
     
     
-    def find_fixed_depth_tree_problem_loandra(self, features, labels, true_labels_for_points, dataset, depth, loandra_path, execution_path):
-        solution = "No solution exists"
-        tree_with_thresholds = None
-        tree = None
-        literals = None
-        cost = None
-
-        tree, TB, TL = build_complete_tree(depth)
-        literals = create_literals(TB, TL, features, labels, len(dataset), True)[0]
-
-        # min margin constraint - only for numerical problem 
-        if (self.min_margin > 1):
-            wcnf = build_clauses_fixed_tree_min_margin_constraint_add(literals, dataset, TB, TL, len(features), labels, true_labels_for_points, self.min_margin)
-    
-        else:
-            wcnf = build_clauses_fixed_tree(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
-
-        # min support constraint 
-        if (self.min_support > 0):
-            wcnf = min_support(wcnf, literals, dataset, TL, self.min_support)
-
-        # Oblivious Tree Constraints addition if ever used
-        wcnf = add_oblivious_tree_constraints(wcnf, features, depth, literals, dataset, self.tree_structure)
-
-        # LOANDRA SUPPORT - EXPORT FILE 
-        wcnf.to_file(execution_path)
-        solution,cost = run_loandra_and_parse_results(loandra_path, execution_path)
-        solution = transform_tree_from_loandra(solution, literals, TL, tree, labels,features,dataset)
-
-
-        if solution != "No solution exists":
-            tree_with_thresholds = add_thresholds(tree, literals, solution, dataset)
-            dot = visualize_tree(tree_with_thresholds)
-            dot.render(f'images/fixed_height/LOANDRA_SOLVED_binary_decision_tree_fixed_depth_{depth}', format='png', cleanup=True)
-        else:
-            print('could not find solution')
-            return 'No solution'
-        
-        return tree_with_thresholds, literals, depth, solution, cost, wcnf
-
-
-    def find_fixed_depth_tree_categorical_problem_loandra(self, features, features_categorical, features_numerical, labels, true_labels_for_points, 
-                                                          dataset, depth, loandra_path, execution_path):
-        solution = "No solution exists"
-        tree_with_thresholds = None
-        tree = None
-        literals = None
-        cost = None
-
-        tree, TB, TL = build_complete_tree(depth)
-        literals = create_literals(TB, TL, features, labels, len(dataset), True)[0]
-
-        wcnf = build_clauses_categorical_fixed(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels,true_labels_for_points)
-
-        # Min support constraint can be added
-        if (self.min_support > 0):
-            wcnf = min_support(wcnf, literals, dataset, TL, self.min_support)
-
-        # Oblivious Tree Constraints addition if ever used
-        wcnf = add_oblivious_tree_constraints(wcnf, features, depth, literals, dataset, self.tree_structure)
-
-        # LOANDRA SUPPORT - EXPORT FILE 
-        wcnf.to_file(execution_path)
-        solution,cost = run_loandra_and_parse_results(loandra_path, execution_path)
-        solution = transform_tree_from_loandra(solution, literals, TL, tree, labels,features,dataset)
-        
-        if solution != "No solution exists":
-            tree_with_thresholds = add_thresholds_categorical(tree, literals, solution, dataset, features_categorical)
-            dot = visualize_tree(tree_with_thresholds)
-            dot.render(f'images/fixed_height/LOANDRA_SOLVED_binary_decision_tree_fixed_with_categorical_features_depth_{depth}', format='png', cleanup=True)
-        else:
-            print('could not find solution')
-            return 'No solution'
-        
-        return tree_with_thresholds, literals, depth, solution, cost, wcnf
-    
-
-    def find_min_depth_tree_problem_loandra(self, features, labels, true_labels_for_points, dataset,loandra_path,execution_path):
-        depth = 1  # Start with a depth of 1
-        solution = "No solution exists"
-        tree_with_thresholds = None
-        tree = None
-        literals = None
-
-        while solution == "No solution exists":
-            tree, TB, TL = build_complete_tree(depth)
-            literals = create_literals(TB, TL, features, labels, len(dataset), False)[0]
-            cnf = build_clauses(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
-            
-            # Oblivious Tree Constraints addition if ever used 
-            cnf = add_oblivious_tree_constraints(cnf, features, depth, literals, dataset, self.tree_structure)
-
-            # LOANDRA SUPPORT - EXPORT FILE
-            
-            # LOANDRA SUPPORT - NEED TO CONNVERT TO NCF MAX SAT PROBLEM BASED ON THEIR IMPLMENTATION (ALL HARD CLAUSES)
-            wcnf = WCNF()
-            for clause in cnf:
-                wcnf.append(clause)             
-            wcnf.to_file(execution_path)
-            
-            
-            solution,cost = run_loandra_and_parse_results(loandra_path, execution_path)
-            
-            # NO SOLUTION FOUND FROM MAX SAT - BECAUSE SCORE IS NOT ZERO!
-            if cost != 0:
-                solution = "No solution exists"
-            
-            if solution != "No solution exists":
-                solution = transform_tree_from_loandra(solution, literals, TL, tree, labels,features,dataset)
-                tree_with_thresholds = add_thresholds(tree, literals, solution, dataset)
-                dot = visualize_tree(tree_with_thresholds)
-                dot.render(f'images/min_height/LOANDRA_SOLVED_binary_decision_tree_min_depth_{depth}', format='png', cleanup=True)
-            else:
-                print('no solution at depth', depth)
-                depth += 1  # Increase the depth and try again
-        
-        return tree_with_thresholds, literals, depth, solution, cnf
-
-
-    def find_min_depth_tree_categorical_problem_loandra(self, features, features_categorical, features_numerical, labels, 
-                                                        true_labels_for_points, dataset, loandra_path, execution_path):
-        depth = 1  # Start with a depth of 1
-        solution = "No solution exists"
-        tree_with_thresholds = None
-        tree = None
-        literals = None
-
-        while solution == "No solution exists":
-            tree, TB, TL = build_complete_tree(depth)
-            literals = create_literals(TB, TL, features, labels, len(dataset), False)[0]
-            cnf = build_clauses_categorical(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels, true_labels_for_points)
-
-            # Oblivious Tree Constraints addition if ever used 
-            cnf = add_oblivious_tree_constraints(cnf, features, depth, literals, dataset, self.tree_structure)
-
-            # LOANDRA SUPPORT - NEED TO CONNVERT TO NCF MAX SAT PROBLEM BASED ON THEIR IMPLMENTATION (ALL HARD CLAUSES)
-            wcnf = WCNF()
-            for clause in cnf:
-                wcnf.append(clause)             
-            wcnf.to_file(execution_path)
-            solution,cost = run_loandra_and_parse_results(loandra_path, execution_path)
-
-            # NO SOLUTION FOUND FROM MAX SAT - BECAUSE SCORE IS NOT ZERO!
-            if cost != 0:
-                solution = "No solution exists"
-            
-            if solution != "No solution exists":
-                solution = transform_tree_from_loandra(solution, literals, TL, tree, labels,features,dataset)
-                tree_with_thresholds = add_thresholds_categorical(tree, literals, solution, dataset, features_categorical)
-                dot = visualize_tree(tree_with_thresholds)
-                dot.render(f'images/min_height/LOANDRA_SOLVED_binary_decision_tree_min_depth_with_categorical_features_depth_{depth}', format='png', cleanup=True)
-            else:
-                print("No solution at depth: ", depth)
-                depth += 1  # Increase the depth and try again
-        
-        return tree_with_thresholds, literals, depth, solution, cnf
-
-
-    def solve_clustering_problem_max_diameter_loandra(self, dataset,features,k_clusters, depth, epsilon, CL_pairs, ML_pairs,
-                                                      loandra_path,execution_path):
-        dataset_size = len(dataset)
-        num_features = len(features)
-        dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
-        tree_structure, TB, TL = build_complete_tree(depth)
-        
-        literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size, distance_classes, False)
-        wcnf = build_clauses_cluster_tree_MD(literals, dataset, TB, TL, num_features, k_clusters,
-                                    CL_pairs, ML_pairs, distance_classes)
-    
-        wcnf.to_file(execution_path)
-       
-        solution,cost = run_loandra_and_parse_results(loandra_path, execution_path)
-        
-        a_matrix, s_matrix, z_matrix, g_matrix, x_i_c_matrix, bw_m_vector = create_literal_matrices_modular(literals=literals,
-                                                                                                    solution=solution,
-                                                                                                    dataset_size=len(dataset),
-                                                                                                    k_clusters=k_clusters,
-                                                                                                    TB=TB,
-                                                                                                    TL=TL,
-                                                                                                    num_features=len(features),
-                                                                                                    distance_classes= distance_classes,
-                                                                                                    bicriteria=False
-                                                                                                    )
-        cluster_assignments, cluster_diameters = assign_clusters_and_diameters(x_i_c_matrix, dataset, k_clusters)
-        if (len(self.features) <= 2):
-            self.plot_and_save_clusters_to_drive(dataset, cluster_assignments, k_clusters)
-        
-        return cluster_assignments, cluster_diameters, literals, solution
-
-    def solve_clustering_problem_bicriteria_loandra(self, dataset,features,k_clusters, depth, epsilon, CL_pairs, ML_pairs,
-                                                      loandra_path,execution_path):
-        dataset_size = len(dataset)
-        num_features = len(features)
-        dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
-        tree_structure, TB, TL = build_complete_tree(depth)
-        
-        literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size, distance_classes, True)
-        
-        if self.smart_pairs:
-            wcnf = build_clauses_cluster_tree_MD_MS_Smart_Pair(literals, dataset, TB, TL, num_features, k_clusters,
-                                    CL_pairs, ML_pairs, distance_classes)
-        else:
-            wcnf = build_clauses_cluster_tree_MD_MS(literals, dataset, TB, TL, num_features, k_clusters,
-                                    CL_pairs, ML_pairs, distance_classes)
-    
-        wcnf.to_file(execution_path)
-       
-        solution,cost = run_loandra_and_parse_results(loandra_path, execution_path)
-        
-        a_matrix, s_matrix, z_matrix, g_matrix, x_i_c_matrix, bw_m_vector, bw_p_vector = create_literal_matrices_modular(
-                                                                                                                            literals=literals,
-                                                                                                                            solution=solution,
-                                                                                                                            dataset_size=len(dataset),
-                                                                                                                            k_clusters=k_clusters,
-                                                                                                                            TB=TB,
-                                                                                                                            TL=TL,
-                                                                                                                            num_features=len(features),
-                                                                                                                            distance_classes= distance_classes,
-                                                                                                                            bicriteria=True
-                                                                                                                            )
-        cluster_assignments, cluster_diameters = assign_clusters_and_diameters(x_i_c_matrix, dataset, k_clusters)
-        if (len(self.features) <= 2):
-            self.plot_and_save_clusters_to_drive(dataset, cluster_assignments, k_clusters)
-        return cluster_assignments, cluster_diameters, literals, solution  
-
 
     def solve_loandra(self,loandra_path,execution_path='dimacs/export_to_solver.cnf'):
         """
@@ -716,72 +644,99 @@ class SATreeCraft:
         objective (minimum height or maximum accuracy given a fixed depth).
         LOANDRA VARIANT - calls external solver support system 
         """
+        execution_path = Path(execution_path)
+        execution_path.parent.mkdir(parents=True, exist_ok=True)  # Ensure the directory exists
 
         if self.is_classification: # classifciation problem domain
             
             if self.features_categorical is not None and len(self.features_categorical) > 0: # categorical feature dataset
                 
                 if self.classification_objective == 'min_height': # minimum height 100% accuracy on training problem
-                    self.model, self.final_literals, self.min_depth, self.sat_solution, self.final_cnf = self.find_min_depth_tree_categorical_problem_loandra(self.features, 
-                                                                                                              self.features_categorical, 
-                                                                                                              self.features_numerical, 
-                                                                                                              self.labels, self.true_labels_for_points, self.dataset,
-                                                                                                              loandra_path,
-                                                                                                              execution_path)
+                    self.model, self.final_literals, self.min_depth, self.sat_solution, self.final_cnf = \
+                        self.find_min_depth_tree_categorical_problem(
+                            self.features,
+                            self.features_categorical,
+                            self.features_numerical,
+                            self.labels,
+                            self.true_labels_for_points,
+                            self.dataset,
+                            use_loandra=True,
+                            loandra_path=loandra_path,
+                            execution_path=execution_path
+                        )
                 else: # Max accuracy problem
-                    self.model, self.final_literals, self.fixed_depth, self.sat_solution, self.min_cost, self.final_cnf = self.find_fixed_depth_tree_categorical_problem_loandra(self.features, 
-                                                                                                              self.features_categorical, 
-                                                                                                              self.features_numerical, 
-                                                                                                              self.labels, 
-                                                                                                              self.true_labels_for_points, 
-                                                                                                              self.dataset, 
-                                                                                                              self.fixed_depth,
-                                                                                                              loandra_path,
-                                                                                                              execution_path)
+                    self.model, self.final_literals, self.fixed_depth, self.sat_solution, self.min_cost, self.final_cnf = \
+                        self.find_fixed_depth_tree_categorical_problem(
+                            self.features,
+                            self.features_categorical,
+                            self.features_numerical,
+                            self.labels,
+                            self.true_labels_for_points,
+                            self.dataset,
+                            self.fixed_depth,
+                            use_loandra=True,
+                            loandra_path=loandra_path,
+                            execution_path=execution_path
+                        )
+
             else: # numerical feature dataset strictly
                 if self.classification_objective == 'min_height':
-                    self.model, self.final_literals, self.min_depth,self.sat_solution, self.final_cnf = self.find_min_depth_tree_problem_loandra(self.features, 
-                                                                                                                          self.labels, 
-                                                                                                                          self.true_labels_for_points, 
-                                                                                                                          self.dataset,
-                                                                                                                          loandra_path,
-                                                                                                                          execution_path)
+                    self.model, self.final_literals, self.min_depth, self.sat_solution, self.final_cnf = \
+                        self.find_min_depth_tree_problem(
+                            self.features,
+                            self.labels,
+                            self.true_labels_for_points,
+                            self.dataset,
+                            use_loandra=True,
+                            loandra_path=loandra_path,
+                            execution_path=execution_path
+                        )
                 else: # max accuracy problem
-                    self.model, self.final_literals, self.fixed_depth, self.sat_solution, self.min_cost, self.final_cnf = self.find_fixed_depth_tree_problem_loandra(self.features, 
-                                                                                                               self.labels, 
-                                                                                                               self.true_labels_for_points, 
-                                                                                                               self.dataset,
-                                                                                                               self.fixed_depth,
-                                                                                                               loandra_path,
-                                                                                                               execution_path)
+                    self.model, self.final_literals, self.fixed_depth, self.sat_solution, self.min_cost, self.final_cnf = \
+                        self.find_fixed_depth_tree_problem(
+                            self.features,
+                            self.labels,
+                            self.true_labels_for_points,
+                            self.dataset,
+                            self.fixed_depth,
+                            use_loandra=True,
+                            loandra_path=loandra_path,
+                            execution_path=execution_path
+                        )
         else:
             max_clusters = 2 ** self.fixed_depth
             if self.k_clusters > max_clusters:
                 raise ValueError(f"The assigned depth {self.fixed_depth} is not sufficient to accommodate {self.k_clusters} clusters.")
             
             if self.clustering_objective == 'max_diameter':
-                self.cluster_assignments, self.cluster_diameters, self.final_literals, self.sat_solution = self.solve_clustering_problem_max_diameter_loandra(self.dataset, 
-                                                                                                                                                    self.features, 
-                                                                                                                                                    self.k_clusters, 
-                                                                                                                                                    self.fixed_depth, 
-                                                                                                                                                    self.epsilon, 
-                                                                                                                                                    self.CL_pairs, 
-                                                                                                                                                    self.ML_pairs,
-                                                                                                                                                    loandra_path,
-                                                                                                                                                    execution_path
-                                                                                                                                                    )
+                self.cluster_assignments, self.cluster_diameters, self.final_literals, self.sat_solution = \
+                    self.solve_clustering_problem_max_diameter(
+                        self.dataset,
+                        self.features,
+                        self.k_clusters,
+                        self.fixed_depth,
+                        self.epsilon,
+                        self.CL_pairs,
+                        self.ML_pairs,
+                        use_loandra=True,
+                        loandra_path=loandra_path,
+                        execution_path=execution_path
+                    )
             else: # bicriteria
                 # print('solving bicriteria')
-                self.cluster_assignments, self.cluster_diameters, self.final_literals, self.sat_solution = self.solve_clustering_problem_bicriteria_loandra(self.dataset, 
-                                                                                                                                                    self.features, 
-                                                                                                                                                    self.k_clusters, 
-                                                                                                                                                    self.fixed_depth, 
-                                                                                                                                                    self.epsilon, 
-                                                                                                                                                    self.CL_pairs, 
-                                                                                                                                                    self.ML_pairs,
-                                                                                                                                                    loandra_path,
-                                                                                                                                                    execution_path
-                                                                                                                                                    )
+                self.cluster_assignments, self.cluster_diameters, self.final_literals, self.sat_solution = \
+                    self.solve_clustering_problem_bicriteria(
+                        self.dataset,
+                        self.features,
+                        self.k_clusters,
+                        self.fixed_depth,
+                        self.epsilon,
+                        self.CL_pairs,
+                        self.ML_pairs,
+                        use_loandra=True,
+                        loandra_path=loandra_path,
+                        execution_path=execution_path
+                    )
 
  
     ##################################### Auxillary Helper Functions for User Interface #############################
