@@ -14,36 +14,37 @@ from satree.treemodder.builder import build_complete_tree, create_literals
 from satree.classification.classification_clauses import add_redundant_constraints, construct_maxsat_clauses
 
 
-def build_clauses(literals, X, TB, TL, num_features, labels,true_labels):
+def build_clauses(literals, dataset, branch_nodes, leaf_nodes, num_features, labels, true_labels):
     """
     Constructs the clauses for the SAT solver based on the decision tree encoding.
 
     Args:
         literals (dict): A dictionary mapping literals to variable indices.
-        X (list): The dataset, a list of tuples representing data points.
-        TB (list): Indices of branching nodes.
-        TL (list): Indices of leaf nodes.
+        dataset (list): The dataset, a list of tuples representing data points.
+        branch_nodes (list): Indices of branching nodes.
+        leaf_nodes (list): Indices of leaf nodes.
         num_features (int): Number of features in the dataset.
         labels (list): Possible class labels for the data points.
+        true_labels (list): The true class labels for the data points.
 
     Returns:
         CNF: A CNF object containing all the clauses.
     """
     cnf = CNF()
 
-    cnf = construct_maxsat_clauses(cnf, literals, X, TB, TL, num_features, labels)
+    cnf = construct_maxsat_clauses(cnf, literals, dataset, branch_nodes, leaf_nodes, num_features, labels)
 
-    cnf = add_redundant_constraints(cnf, literals, X, TB, num_features)
+    cnf = add_redundant_constraints(cnf, literals, dataset, branch_nodes, num_features)
 
     # Clause (11): Correct class labels for leaf nodes
-    for t in TL:
-        for i, xi in enumerate(X):
+    for t in leaf_nodes:
+        for i, xi in enumerate(dataset):
             label = true_labels[i]
             cnf.append([-literals[f'z_{i}_{t}'], literals[f'g_{t}_{label}']])
     
     return cnf
 
-def set_branch_node_features(model, literals, tree_structure,features,datasetX):
+def set_branch_node_features(model, literals, tree_structure,features):
     """
     Set the chosen feature and threshold for each branching node in the tree structure
     based on the given SAT model.
@@ -73,7 +74,7 @@ def set_branch_node_features(model, literals, tree_structure,features,datasetX):
                 node['feature'] = chosen_feature
 
 
-def solve_cnf(cnf, literals, TL, tree_structure, labels,features,datasetX):
+def solve_cnf(cnf, literals, leaf_nodes, tree_structure, labels, features):
     """
     Attempts to solve the given CNF using a SAT solver.
 
@@ -82,7 +83,7 @@ def solve_cnf(cnf, literals, TL, tree_structure, labels,features,datasetX):
     Args:
     - cnf (CNF): The CNF object containing all clauses for the SAT solver.
     - literals (dict): A dictionary mapping literals to variable indices.
-    - TL (list): Indices of leaf nodes in the tree.
+    - leaf_nodes (list): Indices of leaf nodes in the tree.
     - tree_structure (list): The complete binary tree structure.
     - labels (list): The list of class labels for the dataset.
 
@@ -94,13 +95,13 @@ def solve_cnf(cnf, literals, TL, tree_structure, labels,features,datasetX):
     if solver.solve():
         model = solver.get_model()
         # Update the tree structure with the correct labels for leaf nodes
-        for t in TL:
+        for t in leaf_nodes:
             for label in labels:
                 if literals[f'g_{t}_{label}'] in model:
                     tree_structure[t]['label'] = label
                     break
          # Set details for branching nodes
-        set_branch_node_features(model, literals, tree_structure,features,datasetX)
+        set_branch_node_features(model, literals, tree_structure,features)
         return model
     else:
         #print("no solution!")
@@ -125,20 +126,20 @@ def add_thresholds(tree_structure, literals, model_solution, dataset):
     def get_literal_value(literal):
         return literals[literal] if literals[literal] in model_solution else -literals[literal]
 
-    def set_thresholds(node_index, dataset):
+    def set_thresholds(node_index, data):
         node = tree_structure[node_index]
         if node['type'] == 'branching':
             feature_index = int(node['feature'])
-            feature_values = dataset[:, feature_index]
+            feature_values = data[:, feature_index]
             # Use the helper function to compute the threshold.
             node['threshold'] = compute_numerical_threshold(feature_values, node_index, get_literal_value)
 
             # Continue for children nodes.
             left_child_index, right_child_index = node['children'][0], node['children'][1]
             if left_child_index < len(tree_structure):
-                set_thresholds(left_child_index, dataset)
+                set_thresholds(left_child_index, data)
             if right_child_index < len(tree_structure):
-                set_thresholds(right_child_index, dataset)
+                set_thresholds(right_child_index, data)
 
     set_thresholds(0, dataset)
     return tree_structure
@@ -166,14 +167,13 @@ def find_min_depth_tree(features, labels, true_labels_for_points, dataset):
     depth = 1  # Start with a depth of 1
     solution = "No solution exists"
     tree_with_thresholds = None
-    tree = None
     literals = None
 
     while solution == "No solution exists":
         tree, TB, TL = build_complete_tree(depth)
         literals = create_literals(TB, TL, features, labels, len(dataset), False)[0]
         cnf = build_clauses(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
-        solution = solve_cnf(cnf, literals, TL, tree, labels, features, dataset)
+        solution = solve_cnf(cnf, literals, TL, tree, labels, features)
         
         if solution != "No solution exists":
             tree_with_thresholds = add_thresholds(tree, literals, solution, dataset)
