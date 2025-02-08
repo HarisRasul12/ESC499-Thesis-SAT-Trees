@@ -56,7 +56,7 @@ def run_loandra_and_parse_results(loandra_path, execution_path):
     # Extract minimum cost from the last 'o' line before "s OPTIMUM FOUND"
     o_lines = [line for line in output if line.startswith('o ')]
     if o_lines:
-        min_cost = int(o_lines[-1].split()[1])  # Get the last o line's cost
+        min_cost = int(o_lines[-1].split()[1])  # Get the last o_line's cost
 
     # Extract model and convert to the required format
     model_line = next((line for line in output if line.startswith('v ')), None)
@@ -68,14 +68,14 @@ def run_loandra_and_parse_results(loandra_path, execution_path):
     return model, min_cost
 
 
-def transform_tree_from_loandra(model, literals, TL, tree_structure, labels,features,datasetX):
+def transform_tree_from_loandra(model, literals, leaf_indices, tree_structure, labels, features, dataset_x):
     """
     Attempts to complete tree from solutions 
 
     Args:
     - cnf (CNF): The CNF object containing all clauses for the SAT solver.
     - literals (dict): A dictionary mapping literals to variable indices.
-    - TL (list): Indices of leaf nodes in the tree.
+    - leaf_indices (list): Indices of leaf nodes in the tree.
     - tree_structure (list): The complete binary tree structure.
     - labels (list): The list of class labels for the dataset.
 
@@ -86,13 +86,13 @@ def transform_tree_from_loandra(model, literals, TL, tree_structure, labels,feat
     #print(model)
     if model:
         # Update the tree structure with the correct labels for leaf nodes
-        for t in TL:
+        for t in leaf_indices:
             for label in labels:
                 if literals[f'g_{t}_{label}'] in model:
                     tree_structure[t]['label'] = label
                     break
          # Set details for branching nodes
-        set_branch_node_features(model, literals, tree_structure,features,datasetX)
+        set_branch_node_features(model, literals, tree_structure, features, dataset_x)
         return model
     else:
         return "No solution exists"
