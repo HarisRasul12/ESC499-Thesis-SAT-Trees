@@ -1,10 +1,40 @@
 """
 =========== Module Description ===========
 
-Module to build the complete minimum depth tree and create literals. This module includes a modified decoded threshold
-compared to the original paper and should be tested on test accuracy later.
+This module implements a SAT-based approach for constructing and visualizing decision trees
+of minimal depth. By incrementally increasing the tree depth until a satisfiable solution
+is found, the module encodes constraints and objectives as a CNF formula, leverages a SAT
+solver to identify valid assignments, and assigns computed thresholds to branching nodes.
+
+Key mathematical and algorithmic aspects include:
+
+1. **CNF Construction**:
+   - A maxSAT-like encoding is employed, wherein clauses represent:
+     • Feature selection (a_{t}_{j}),
+     • Data point routing decisions (s_{i}_{t}),
+     • Data point-to-leaf assignments (z_{i}_{t}),
+     • Label assignments at leaf nodes (g_{t}_{label}).
+   - Redundant constraints prune the search space by guiding extreme data-point routing (lowest or highest values).
+   - Once the constraints are constructed, they are passed to a SAT solver.
+
+2. **SAT Solving and Model Extraction**:
+   - If a solution is found, the module updates the tree structure:
+     • Assigning features to branching nodes,
+     • Computing thresholds for each branching node (using numerical splits),
+     • Assigning labels to leaves.
+
+3. **Visualization**:
+   - A Graphviz Digraph is created to illustrate the resultant decision tree, showing branching nodes,
+     threshold values, and leaf labels.
+
+By exploring increasingly deep trees, this module ensures a minimal-depth tree that satisfies
+the encoding’s constraints, effectively combining structural validity with classification needs
+in a rigorous mathematical framework.
 """
 
+from typing import List, Dict, Any, Tuple, Union
+
+import numpy as np
 from graphviz import Digraph
 from pysat.formula import CNF
 from pysat.solvers import Solver
@@ -14,21 +44,27 @@ from satree.treemodder.builder import build_complete_tree, create_literals
 from satree.classification.classification_clauses import add_redundant_constraints, construct_maxsat_clauses
 
 
-def build_clauses(literals, dataset, branch_nodes, leaf_nodes, num_features, labels, true_labels):
+def build_clauses(literals: Dict[str, int],
+                  dataset: np.ndarray,
+                  branch_nodes: List[int],
+                  leaf_nodes: List[int],
+                  num_features: int,
+                  labels: List[Any],
+                  true_labels: List[Any]) -> CNF:
     """
     Constructs the clauses for the SAT solver based on the decision tree encoding.
 
     Args:
-        literals (dict): A dictionary mapping literals to variable indices.
-        dataset (list): The dataset, a list of tuples representing data points.
-        branch_nodes (list): Indices of branching nodes.
-        leaf_nodes (list): Indices of leaf nodes.
-        num_features (int): Number of features in the dataset.
-        labels (list): Possible class labels for the data points.
-        true_labels (list): The true class labels for the data points.
+        literals: A dictionary mapping literals to variable indices.
+        dataset: The dataset, a list of tuples representing data points.
+        branch_nodes: Indices of branching nodes.
+        leaf_nodes: Indices of leaf nodes.
+        num_features: Number of features in the dataset.
+        labels: Possible class labels for the data points.
+        true_labels: The true class labels for the data points.
 
     Returns:
-        CNF: A CNF object containing all the clauses.
+        A CNF object containing all the clauses.
     """
     cnf = CNF()
 
@@ -41,26 +77,28 @@ def build_clauses(literals, dataset, branch_nodes, leaf_nodes, num_features, lab
         for i, xi in enumerate(dataset):
             label = true_labels[i]
             cnf.append([-literals[f'z_{i}_{t}'], literals[f'g_{t}_{label}']])
-    
+
     return cnf
 
-def set_branch_node_features(model, literals, tree_structure,features):
+
+def set_branch_node_features(model: List[int],
+                             literals: Dict[str, int],
+                             tree_structure: List[Dict[str, Any]],
+                             features: List[str]) -> None:
     """
     Set the chosen feature and threshold for each branching node in the tree structure
     based on the given SAT model.
 
     Args:
-        model (list): The model returned by the SAT solver.
-        literals (dict): A dictionary mapping literals to variable indices.
-        tree_structure (list): The complete binary tree structure.
-        features (list): List of features in the dataset.
-
-    Returns:
-        None
+        model: The model returned by the SAT solver.
+        literals: A dictionary mapping literals to variable indices.
+        tree_structure: The complete binary tree structure.
+        features: List of features in the dataset.
     """
+
     # For each branching node, determine the chosen feature and threshold
     for node_index in range(len(tree_structure)):
-        #print(node_index)
+        # print(node_index)
         node = tree_structure[node_index]
         if node['type'] == 'branching':
             # Find which feature is used for splitting at the current node
@@ -69,29 +107,34 @@ def set_branch_node_features(model, literals, tree_structure,features):
                 if literals[f'a_{node_index}_{feature}'] in model:
                     chosen_feature = feature
                     break
-            
+
             # If a feature is chosen, set the feature and find the threshold
             if chosen_feature is not None:
                 # Set the chosen feature and computed threshold in the tree structure
                 node['feature'] = chosen_feature
 
 
-def solve_cnf(cnf, literals, leaf_nodes, tree_structure, labels, features):
+def solve_cnf(cnf: CNF,
+              literals: Dict[str, int],
+              leaf_nodes: List[int],
+              tree_structure: List[Dict[str, Any]],
+              labels: List[Any],
+              features: List[str]) -> Union[List[int], str]:
     """
     Attempts to solve the given CNF using a SAT solver.
 
     If a solution is found, it updates the tree structure with the correct labels for leaf nodes.
 
     Args:
-        cnf (CNF): The CNF object containing all clauses for the SAT solver.
-        literals (dict): A dictionary mapping literals to variable indices.
-        leaf_nodes (list): Indices of leaf nodes in the tree.
-        tree_structure (list): The complete binary tree structure.
-        labels (list): The list of class labels for the dataset.
-        features (list): The list of feature names in the dataset.
+        cnf: The CNF object containing all clauses for the SAT solver.
+        literals: A dictionary mapping literals to variable indices.
+        leaf_nodes: Indices of leaf nodes in the tree.
+        tree_structure: The complete binary tree structure.
+        labels: The list of class labels for the dataset.
+        features: The list of feature names in the dataset.
 
     Returns:
-        solution (list or str): The solution to the SAT problem if it exists, otherwise "No solution exists".
+        The solution to the SAT problem if it exists, otherwise "No solution exists".
     """
     solver = Solver()
     solver.append_formula(cnf)
@@ -103,29 +146,32 @@ def solve_cnf(cnf, literals, leaf_nodes, tree_structure, labels, features):
                 if literals[f'g_{t}_{label}'] in model:
                     tree_structure[t]['label'] = label
                     break
-         # Set details for branching nodes
-        set_branch_node_features(model, literals, tree_structure,features)
+        # Set details for branching nodes
+        set_branch_node_features(model, literals, tree_structure, features)
         return model
     else:
-        #print("no solution!")
+        # print("no solution!")
         return "No solution exists"
 
 
-#adjusted Logic to compute threshold on the entire dataset at each feature node branch
-def add_thresholds(tree_structure, literals, model_solution, dataset):
+def add_thresholds(tree_structure: List[Dict[str, Any]],
+                   literals: Dict[str, int],
+                   model_solution: List[int],
+                   dataset: np.ndarray) -> List[Dict[str, Any]]:
     """
     Compute the threshold for each branching node in the tree structure
     based on the entire dataset.
 
     Args:
-        tree_structure (list): The binary tree structure containing nodes.
-        literals (dict): The mapping of literals to variable indices.
-        model_solution (list): The model solution from the SAT solver.
-        dataset (np.array): The dataset containing all the data points.
+        tree_structure: The binary tree structure containing nodes.
+        literals: The mapping of literals to variable indices.
+        model_solution: The model solution from the SAT solver.
+        dataset: The dataset containing all the data points.
 
     Returns:
-        tree_structure (list): The updated tree structure with thresholds set for branching nodes.
+        The updated tree structure with thresholds set for branching nodes.
     """
+
     def get_literal_value(literal):
         return literals[literal] if literals[literal] in model_solution else -literals[literal]
 
@@ -148,7 +194,9 @@ def add_thresholds(tree_structure, literals, model_solution, dataset):
     return tree_structure
 
 
-def add_nodes(dot, tree, node_index=0):
+def add_nodes(dot: Digraph,
+              tree: List[Dict[str, Any]],
+              node_index: int = 0) -> None:
     """
     Recursively adds nodes and edges to a Graphviz Digraph object based on the given tree structure.
 
@@ -157,16 +205,14 @@ def add_nodes(dot, tree, node_index=0):
     Digraph object for visualization.
 
     Args:
-        dot (Digraph): A Graphviz Digraph object used for visualizing the tree.
-        tree (list): The complete tree structure (list of nodes).
-        node_index (int, optional): The index of the current node to process (defaults to 0 for the root).
-
-    Returns:
-        None. The function updates the Digraph object in place.
+        dot: A Graphviz Digraph object used for visualizing the tree.
+        tree: The complete tree structure (list of nodes).
+        node_index: The index of the current node to process (defaults to 0 for the root).
     """
     node = tree[node_index]
     if node['type'] == 'branching':
-        dot.node(str(node_index), label=f"BranchNode:\n{node_index}\nFeature:{node['feature']}\nThreshold:{node['threshold']}")
+        dot.node(str(node_index),
+                 label=f"BranchNode:\n{node_index}\nFeature:{node['feature']}\nThreshold:{node['threshold']}")
         for child_index in node['children']:
             add_nodes(dot, tree, child_index)
             dot.edge(str(node_index), str(child_index))
@@ -174,7 +220,7 @@ def add_nodes(dot, tree, node_index=0):
         dot.node(str(node_index), label=f"LeafNode:\n{node_index}\nLabel: {node['label']}")
 
 
-def visualize_tree(tree_structure):
+def visualize_tree(tree_structure: List[Dict[str, Any]]) -> Digraph:
     """
     Visualizes the given tree structure using Graphviz.
 
@@ -182,17 +228,20 @@ def visualize_tree(tree_structure):
     and returns the resulting Digraph object for rendering or further manipulation.
 
     Args:
-        tree_structure (list): The complete tree structure (list of nodes) to be visualized.
+        tree_structure: The complete tree structure (list of nodes) to be visualized.
 
     Returns:
-        Digraph: A Graphviz Digraph object representing the tree.
+        A Graphviz Digraph object representing the tree.
     """
     dot = Digraph()
     add_nodes(dot, tree_structure)
     return dot
 
 
-def find_min_depth_tree(features, labels, true_labels_for_points, dataset):
+def find_min_depth_tree(features: List[str],
+                        labels: List[Any],
+                        true_labels_for_points: List[Any],
+                        dataset: np.ndarray) -> Tuple[List[Dict[str, Any]], Dict[str, int], int, Union[List[int], str]]:
     """
     Finds the minimum depth decision tree for a classification problem using SAT-based encoding.
 
@@ -206,17 +255,17 @@ def find_min_depth_tree(features, labels, true_labels_for_points, dataset):
       - If no solution is found, it increases the depth and tries again.
 
     Args:
-        features (list): List of feature identifiers used for splitting in the decision tree.
-        labels (list): List of possible class labels.
-        true_labels_for_points (list): The true class labels for each data point.
-        dataset (array-like): The dataset containing data points (each data point is represented as a tuple or array).
+        features: List of feature identifiers used for splitting in the decision tree.
+        labels: List of possible class labels.
+        true_labels_for_points: The true class labels for each data point.
+        dataset: The dataset containing data points (each data point is represented as a tuple or array).
 
     Returns:
-        tuple: A tuple containing:
+        A tuple containing:
             - tree_with_thresholds: The final decision tree structure with computed thresholds.
-            - literals (dict): A dictionary mapping SAT literal names to their variable indices.
-            - depth (int): The depth of the found decision tree.
-            - solution (list or str): The SAT solver's solution if found, or "No solution exists" if unsolvable.
+            - literals: A dictionary mapping SAT literal names to their variable indices.
+            - depth: The depth of the found decision tree.
+            - solution: The SAT solver's solution if found, or "No solution exists" if unsolvable.
     """
     depth = 1  # Start with a depth of 1
     solution = "No solution exists"
@@ -228,7 +277,7 @@ def find_min_depth_tree(features, labels, true_labels_for_points, dataset):
         literals = create_literals(TB, TL, features, labels, len(dataset), False)[0]
         cnf = build_clauses(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
         solution = solve_cnf(cnf, literals, TL, tree, labels, features)
-        
+
         if solution != "No solution exists":
             tree_with_thresholds = add_thresholds(tree, literals, solution, dataset)
             dot = visualize_tree(tree_with_thresholds)
@@ -236,6 +285,5 @@ def find_min_depth_tree(features, labels, true_labels_for_points, dataset):
         else:
             print('no solution at depth', depth)
             depth += 1  # Increase the depth and try again
-    
-    return tree_with_thresholds, literals, depth, solution
 
+    return tree_with_thresholds, literals, depth, solution

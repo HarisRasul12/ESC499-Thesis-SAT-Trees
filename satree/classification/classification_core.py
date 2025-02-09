@@ -1,7 +1,36 @@
+"""
+=========== Module Description ===========
+
+This module provides core utility functions for encoding and analyzing decision tree
+classification problems using SAT-based methods. It includes functions to:
+
+  - Compute an ordering of data points for a given feature. For categorical features,
+    indices are grouped by unique category (preserving the natural order), while for
+    numerical features, the indices are sorted by their numeric values.
+
+  - Determine the ancestors of a node in a binary tree represented implicitly as an array,
+    which is useful for constructing path-based constraints.
+
+  - Generate consecutive pairs of data point indices based on sorted order for a numerical
+    feature. These pairs are used to establish ordering constraints.
+
+  - Compute a numerical threshold for a feature at a decision node by detecting the point
+    (between two consecutive data points) where the SAT literal assignment changes sign. This
+    threshold represents a decision boundary in the tree.
+
+Together, these utilities support the construction and analysis of SAT encodings for decision
+trees, enabling the formulation of constraints that ensure proper data point routing, feature
+selection, and threshold determination for both categorical and numerical data.
+"""
+
+from typing import List, Tuple, Callable, Optional
+
 import numpy as np
 
 
-def compute_ordering_with_categorical(dataset, feature_index, features_categorical):
+def compute_ordering_with_categorical(dataset: np.ndarray,
+                                      feature_index: int,
+                                      features_categorical: List[str]) -> List[int]:
     """
     Computes an ordering of data point indices for a given feature, taking into account categorical features.
 
@@ -10,14 +39,13 @@ def compute_ordering_with_categorical(dataset, feature_index, features_categoric
     based on the float value of the feature.
 
     Args:
-        dataset (np.ndarray): A 2D array representing the dataset, where each row is a data point.
-        feature_index (int): The index of the feature to order by.
-        features_categorical (list): A list of feature indices (as strings) that are considered categorical.
+        dataset: A 2D array representing the dataset, where each row is a data point.
+        feature_index: The index of the feature to order by.
+        features_categorical: A list of feature indices (as strings) that are considered categorical.
 
     Returns:
-        list: An ordered list of data point indices. For categorical features, this is a concatenation of the
-              indices for each unique category; for numerical features, the indices are sorted in ascending order
-              of the feature values.
+        An ordered list of data point indices. For categorical features, indices are grouped by category;
+                    for numerical features, indices are sorted by value.
     """
     # Determine if the current feature is categorical
     is_categorical = str(feature_index) in features_categorical
@@ -35,7 +63,7 @@ def compute_ordering_with_categorical(dataset, feature_index, features_categoric
     return ordering
 
 
-def get_ancestors(node_index, side):
+def get_ancestors(node_index: int, side: str) -> List[int]:
     """
     Returns the indices of the ancestors of a node in a binary tree based on its implicit array representation.
 
@@ -44,12 +72,12 @@ def get_ancestors(node_index, side):
     its parent is at index (i - 1) // 2.
 
     Args:
-        node_index (int): The index of the node whose ancestors are to be found.
-        side (str): The side of the ancestors to collect ('left' or 'right'). For example, if 'left', only ancestors
+        node_index: The index of the node whose ancestors are to be found.
+        side: The side of the ancestors to collect ('left' or 'right'). For example, if 'left', only ancestors
                     where the current node is a left child are included.
 
     Returns:
-        list: A list of ancestor indices on the specified side.
+        A list of ancestor indices on the specified side.
     """
     ancestors = []
     current_index = node_index
@@ -64,8 +92,8 @@ def get_ancestors(node_index, side):
     return ancestors
 
 
-# Helper function to sort data points by feature and create O_j
-def compute_ordering(dataset, feature_index):
+def compute_ordering(dataset: np.ndarray,
+                     feature_index: int) -> List[Tuple[int, int]]:
     """
     Computes the ordering of data point indices for a specified feature.
 
@@ -73,18 +101,20 @@ def compute_ordering(dataset, feature_index):
     each containing a pair of consecutive data point indices from the sorted order.
 
     Args:
-        dataset (list): A list of data points (each data point can be a tuple or list).
-        feature_index (int): The index of the feature used for sorting.
+        dataset: A list of data points (each data point can be a tuple or list).
+        feature_index: The index of the feature used for sorting.
 
     Returns:
-        list: A list of tuples, where each tuple contains a pair (i, j) representing consecutive data point indices
-              in the sorted order.
+        A list of tuples, where each tuple contains a pair (i, j) representing consecutive data point indices
+                    in the sorted order.
     """
-    sorted_indices = sorted(range(len(dataset)), key=lambda i: dataset[i][feature_index])
+    sorted_indices = sorted(range(len(dataset)), key=lambda i: float(dataset[i][feature_index]))
     return [(sorted_indices[i], sorted_indices[i + 1]) for i in range(len(sorted_indices) - 1)]
 
 
-def compute_numerical_threshold(feature_values, node_index, get_literal_value):
+def compute_numerical_threshold(feature_values: np.ndarray,
+                                node_index: int,
+                                get_literal_value: Callable[[str], int]) -> Optional[float]:
     """
     Computes the threshold for a numerical feature based on when the literal direction changes.
 
@@ -92,12 +122,12 @@ def compute_numerical_threshold(feature_values, node_index, get_literal_value):
     of the corresponding literals changes. If no such change is found, returns None.
 
     Args:
-        feature_values (np.array): An array of values for a particular feature.
-        node_index (int): The index of the current node.
-        get_literal_value (function): A function that accepts a literal (str) and returns its value in the model solution.
+        feature_values: An array of values for a particular feature.
+        node_index: The index of the current node.
+        get_literal_value: A function that accepts a literal (str) and returns its value in the model solution.
 
     Returns:
-        float or None: The computed threshold as the average of the two adjacent feature values where the sign
+        The computed threshold as the average of the two adjacent feature values where the sign
                        change occurs, or None if no change is found.
     """
     sorted_indices = np.argsort(feature_values)

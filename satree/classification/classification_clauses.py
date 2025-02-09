@@ -1,6 +1,34 @@
+"""
+=========== Module Description ===========
+
+This module provides a suite of helper functions for constructing SAT (and MaxSAT) clauses
+to encode decision tree based classification problems. It includes utilities to:
+  - Append direction clauses for branching nodes.
+  - Add data point direction and path validity clauses.
+  - Construct feature selection clauses and combine them with data point constraints.
+  - Build maxSAT clauses that mix hard constraints (e.g., tree structure integrity)
+    with soft constraints (e.g., maximizing correct classifications).
+  - Incorporate redundant constraints and path deviation clauses to prune the search space.
+
+These functions are designed to work with both CNF and WCNF representations (from the pysat library)
+and support the encoding of trees that handle both numerical and categorical features.
+"""
+
+from typing import List, Dict, Any, Union
+
+import numpy as np
+from pysat.formula import CNF, WCNF
+
 from satree.classification.classification_core import compute_ordering_with_categorical, get_ancestors, compute_ordering
 
-def append_direction_clauses(cnf, literals, t, j, i_index, ip_index, append_both=False):
+
+def append_direction_clauses(cnf: Union[WCNF, CNF],  # Use WCNF or CNF as appropriate
+                             literals: Dict[str, int],
+                             t: int,
+                             j: int,
+                             i_index: int,
+                             ip_index: int,
+                             append_both: bool = False) -> None:
     """
     Appends direction clauses for a given branching node and feature.
 
@@ -10,20 +38,25 @@ def append_direction_clauses(cnf, literals, t, j, i_index, ip_index, append_both
         (this second clause is appended only if append_both is True)
 
     Args:
-        cnf (list): The CNF (list of clauses) to which the new clauses will be appended.
-        literals (dict): A dictionary mapping literal names (as strings) to their variable indices.
-        t (int): The index of the current branching node.
-        j (int): The feature index.
-        i_index (int): The index of the left data point.
-        ip_index (int): The index of the right data point.
-        append_both (bool): If True, both clauses will be appended; if False, only the first clause is appended.
+        cnf: The CNF (list of clauses) to which the new clauses will be appended.
+        literals: A dictionary mapping literal names (as strings) to their variable indices.
+        t: The index of the current branching node.
+        j: The feature index.
+        i_index: The index of the left data point.
+        ip_index: The index of the right data point.
+        append_both: If True, both clauses will be appended; if False, only the first clause is appended.
     """
     cnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i_index}_{t}'], -literals[f's_{ip_index}_{t}']])
     if append_both:
         cnf.append([-literals[f'a_{t}_{j}'], -literals[f's_{i_index}_{t}'], literals[f's_{ip_index}_{t}']])
 
 
-def add_data_point_clauses(cnf, literals, dataset, branch_nodes, leaf_nodes, num_features):
+def add_data_point_clauses(cnf: CNF,
+                           literals: Dict[str, int],
+                           dataset: np.ndarray,
+                           branch_nodes: List[int],
+                           leaf_nodes: List[int],
+                           num_features: int) -> CNF:
     """
     Adds data point direction and path validity clauses to the CNF object.
 
@@ -31,15 +64,15 @@ def add_data_point_clauses(cnf, literals, dataset, branch_nodes, leaf_nodes, num
     path validity from right and left traversal, and deviations for data points not ending in leaf nodes.
 
     Args:
-        cnf (CNF): The CNF object to which the clauses will be added.
-        literals (dict): A dictionary mapping literals to variable indices.
-        dataset (list): The dataset, a list of tuples representing data points.
-        branch_nodes (list): Indices of branching nodes.
-        leaf_nodes (list): Indices of leaf nodes.
-        num_features (int): Number of features in the dataset.
+        cnf: The CNF object to which the clauses will be added.
+        literals: A dictionary mapping literals to variable indices.
+        dataset: The dataset, a list of tuples representing data points.
+        branch_nodes: Indices of branching nodes.
+        leaf_nodes: Indices of leaf nodes.
+        num_features: Number of features in the dataset.
 
     Returns:
-        CNF: The updated CNF object with the added data point clauses.
+        The updated CNF object with the added data point clauses.
     """
     # Clause (3) and (4): Data point direction based on feature values
     for j in range(num_features):
@@ -57,20 +90,25 @@ def add_data_point_clauses(cnf, literals, dataset, branch_nodes, leaf_nodes, num
     return cnf
 
 
-def construct_feature_selection_clauses(wcnf, literals, dataset, branch_nodes, leaf_nodes, num_features):
+def construct_feature_selection_clauses(wcnf: Union[WCNF, CNF],  # Use WCNF or CNF as appropriate
+                                        literals: Dict[str, int],
+                                        dataset: np.ndarray,
+                                        branch_nodes: List[int],
+                                        leaf_nodes: List[int],
+                                        num_features: int) -> Union[WCNF, CNF]:
     """
     Constructs the feature selection clauses for the SAT solver based on the decision tree encoding.
 
     Args:
-        wcnf (WCNF): The WCNF object to which the clauses will be added.
-        literals (dict): A dictionary mapping literals to variable indices.
-        dataset (list): The dataset, a list of tuples representing data points.
-        branch_nodes (list): Indices of branching nodes.
-        leaf_nodes (list): Indices of leaf nodes.
-        num_features (int): Number of features in the dataset.
+        wcnf: The WCNF object to which the clauses will be added.
+        literals: A dictionary mapping literals to variable indices.
+        dataset: The dataset, a list of tuples representing data points.
+        branch_nodes: Indices of branching nodes.
+        leaf_nodes: Indices of leaf nodes.
+        num_features: Number of features in the dataset.
 
     Returns:
-        WCNF: A WCNF object containing all the feature selection clauses.
+        A WCNF object containing all the feature selection clauses.
     """
     wcnf = add_feature_selection_clauses_for_branching_nodes(wcnf, literals, branch_nodes, num_features)
     wcnf = add_data_point_clauses(wcnf, literals, dataset, branch_nodes, leaf_nodes, num_features)
@@ -78,21 +116,27 @@ def construct_feature_selection_clauses(wcnf, literals, dataset, branch_nodes, l
     return wcnf
 
 
-def construct_maxsat_clauses(wcnf, literals, dataset, branch_nodes, leaf_nodes, num_features, labels):
+def construct_maxsat_clauses(wcnf: Union[WCNF, CNF],  # Use WCNF or CNF as appropriate
+                             literals: Dict[str, int],
+                             dataset: np.ndarray,
+                             branch_nodes: List[int],
+                             leaf_nodes: List[int],
+                             num_features: int,
+                             labels: List[Any]) -> WCNF:
     """
     Constructs the clauses for the SAT solver based on the decision tree encoding.
 
     Args:
-        wcnf (WCNF): The WCNF object to which the clauses will be added.
-        literals (dict): A dictionary mapping literals to variable indices.
-        dataset (list): The dataset, a list of tuples representing data points.
-        branch_nodes (list): Indices of branching nodes.
-        leaf_nodes (list): Indices of leaf nodes.
-        num_features (int): Number of features in the dataset.
-        labels (list): Possible class labels for the data points.
+        wcnf: The WCNF object to which the clauses will be added.
+        literals: A dictionary mapping literals to variable indices.
+        dataset: The dataset, a list of tuples representing data points.
+        branch_nodes: Indices of branching nodes.
+        leaf_nodes: Indices of leaf nodes.
+        num_features: Number of features in the dataset.
+        labels: Possible class labels for the data points.
 
     Returns:
-        WCNF: A WCNF object containing all the clauses, with hard clauses for the tree structure and soft clauses for maximizing correctly classified points.
+        A WCNF object containing all the clauses, with hard clauses for the tree structure and soft clauses for maximizing correctly classified points.
     """
 
     wcnf = construct_feature_selection_clauses(wcnf, literals, dataset, branch_nodes, leaf_nodes, num_features)
@@ -106,7 +150,11 @@ def construct_maxsat_clauses(wcnf, literals, dataset, branch_nodes, leaf_nodes, 
     return wcnf
 
 
-def add_classification_clauses(wcnf, literals, dataset, leaf_nodes, true_labels):
+def add_classification_clauses(wcnf: WCNF,
+                               literals: Dict[str, int],
+                               dataset: np.ndarray,
+                               leaf_nodes: List[int],
+                               true_labels: List[Any]) -> WCNF:
     """
     Adds classification clauses to the WCNF object.
 
@@ -114,14 +162,14 @@ def add_classification_clauses(wcnf, literals, dataset, leaf_nodes, true_labels)
     and soft clauses to maximize the number of correctly classified data points.
 
     Args:
-        wcnf (WCNF): The WCNF object to which the clauses will be added.
-        literals (dict): A dictionary mapping literals to variable indices.
-        dataset (list): The dataset, a list of tuples representing data points.
-        leaf_nodes (list): Indices of leaf nodes.
-        true_labels (list): The true labels for the data points.
+        wcnf: The WCNF object to which the clauses will be added.
+        literals: A dictionary mapping literals to variable indices.
+        dataset: The dataset, a list of tuples representing data points.
+        leaf_nodes: Indices of leaf nodes.
+        true_labels: The true labels for the data points.
 
     Returns:
-        WCNF: The updated WCNF object with the added classification clauses.
+        The updated WCNF object with the added classification clauses.
     """
     # New Hard Clause (12) for ensuring pi is true only when xi ends up in a leaf node with the correct label, REMOVED (CLAUSE 11)
     for i, xi in enumerate(dataset):
@@ -137,7 +185,11 @@ def add_classification_clauses(wcnf, literals, dataset, leaf_nodes, true_labels)
     return wcnf
 
 
-def add_redundant_constraints(cnf, literals, dataset, branch_nodes, num_features):
+def add_redundant_constraints(cnf: Union[WCNF, CNF],  # Use WCNF or CNF as appropriate
+                              literals: Dict[str, int],
+                              dataset: np.ndarray,
+                              branch_nodes: List[int],
+                              num_features: int) -> Union[WCNF, CNF]:
     """
     Adds redundant constraints to prune the search space.
 
@@ -145,21 +197,21 @@ def add_redundant_constraints(cnf, literals, dataset, branch_nodes, num_features
     and the data point with the highest feature value is directed right for each feature at each branching node.
 
     Args:
-        cnf (CNF): The CNF object to which the clauses will be added.
-        literals (dict): A dictionary mapping literals to variable indices.
-        dataset (list): The dataset, a list of tuples representing data points.
-        branch_nodes (list): Indices of branching nodes.
-        num_features (int): Number of features in the dataset.
+        cnf: The CNF object to which the clauses will be added.
+        literals: A dictionary mapping literals to variable indices.
+        dataset: The dataset, a list of tuples representing data points.
+        branch_nodes: Indices of branching nodes.
+        num_features: Number of features in the dataset.
 
     Returns:
-        CNF: The updated CNF object with the added redundant constraints.
+        The updated CNF object with the added redundant constraints.
     """
     # Clause (9) and (10): Redundant constraints to prune the search space
     # These clauses are optimizations
     for t in branch_nodes:
         # Find the data point with the lowest and highest feature value for each feature
         for j in range(num_features):
-            sorted_by_feature = sorted(range(len(dataset)), key=lambda k: dataset[k][j])
+            sorted_by_feature = sorted(range(len(dataset)), key=lambda k: float(dataset[k][j]))
             lowest_value_index = sorted_by_feature[0]
             highest_value_index = sorted_by_feature[-1]
 
@@ -172,7 +224,15 @@ def add_redundant_constraints(cnf, literals, dataset, branch_nodes, num_features
     return cnf
 
 
-def add_clauses_for_features_and_paths(cnf, literals, dataset, branch_nodes, leaf_nodes, num_features, features_categorical, features_numerical, labels):
+def add_clauses_for_features_and_paths(cnf: Union[WCNF, CNF],  # Use WCNF or CNF as appropriate
+                                       literals: Dict[str, int],
+                                       dataset: np.ndarray,
+                                       branch_nodes: List[int],
+                                       leaf_nodes: List[int],
+                                       num_features: int,
+                                       features_categorical: List[str],
+                                       features_numerical: List[str],
+                                       labels: List[Any]) -> Union[WCNF, CNF]:
     """
     Adds clauses for feature selection, path validity, and label assignment to the CNF object.
 
@@ -180,18 +240,18 @@ def add_clauses_for_features_and_paths(cnf, literals, dataset, branch_nodes, lea
     deviations for data points not ending in leaf nodes, and label assignment for leaf nodes.
 
     Args:
-        cnf (CNF): The CNF object to which the clauses will be added.
-        literals (dict): A dictionary mapping literals to variable indices.
-        dataset (list): The dataset, a list of tuples representing data points.
-        branch_nodes (list): Indices of branching nodes.
-        leaf_nodes (list): Indices of leaf nodes.
-        num_features (int): Number of features in the dataset.
-        features_categorical (list): List of categorical feature indices.
-        features_numerical (list): List of numerical feature indices.
-        labels (list): Possible class labels for the data points.
+        cnf: The CNF object to which the clauses will be added.
+        literals: A dictionary mapping literals to variable indices.
+        dataset: The dataset, a list of tuples representing data points.
+        branch_nodes: Indices of branching nodes.
+        leaf_nodes: Indices of leaf nodes.
+        num_features: Number of features in the dataset.
+        features_categorical: List of categorical feature indices.
+        features_numerical: List of numerical feature indices.
+        labels: Possible class labels for the data points.
 
     Returns:
-        CNF: The updated CNF object with the added clauses.
+        The updated CNF object with the added clauses.
     """
     # Clauses (16), (17), and (18)
     for j in range(num_features):
@@ -202,8 +262,10 @@ def add_clauses_for_features_and_paths(cnf, literals, dataset, branch_nodes, lea
                 if str(j) in features_categorical:
                     # Clause (18) and (17) for categorical features
                     if dataset[i_index, j] == dataset[ip_index, j]:
-                        cnf.append([-literals[f'a_{t}_{j}'], -literals[f's_{i_index}_{t}'], literals[f's_{ip_index}_{t}']])
-                        cnf.append([-literals[f'a_{t}_{j}'], literals[f's_{i_index}_{t}'], -literals[f's_{ip_index}_{t}']])
+                        cnf.append(
+                            [-literals[f'a_{t}_{j}'], -literals[f's_{i_index}_{t}'], literals[f's_{ip_index}_{t}']])
+                        cnf.append(
+                            [-literals[f'a_{t}_{j}'], literals[f's_{i_index}_{t}'], -literals[f's_{ip_index}_{t}']])
                 else:
                     # Clause (16) and (17) for numerical features
                     if float(dataset[i_index, j]) < float(dataset[ip_index, j]):
@@ -231,7 +293,10 @@ def add_clauses_for_features_and_paths(cnf, literals, dataset, branch_nodes, lea
     return cnf
 
 
-def add_feature_selection_clauses_for_branching_nodes(cnf, literals, branch_nodes, num_features):
+def add_feature_selection_clauses_for_branching_nodes(cnf: Union[WCNF, CNF],  # Use WCNF or CNF as appropriate
+                                                      literals: Dict[str, int],
+                                                      branch_nodes: List[int],
+                                                      num_features: int) -> CNF:
     """
     Adds feature selection clauses to the CNF object.
 
@@ -239,13 +304,13 @@ def add_feature_selection_clauses_for_branching_nodes(cnf, literals, branch_node
     and no two features are chosen simultaneously.
 
     Args:
-        cnf (CNF): The CNF object to which the clauses will be added.
-        literals (dict): A dictionary mapping literals to variable indices.
-        branch_nodes (list): Indices of branching nodes.
-        num_features (int): Number of features in the dataset.
+        cnf: The CNF object to which the clauses will be added.
+        literals: A dictionary mapping literals to variable indices.
+        branch_nodes: Indices of branching nodes.
+        num_features: Number of features in the dataset.
 
     Returns:
-        CNF: The updated CNF object with the added feature selection clauses.
+        The updated CNF object with the added feature selection clauses.
     """
     # Clause (14) and (15): Feature selection at branching nodes
     for t in branch_nodes:
@@ -262,7 +327,10 @@ def add_feature_selection_clauses_for_branching_nodes(cnf, literals, branch_node
     return cnf
 
 
-def add_path_validity_and_deviation_clauses(cnf, literals, dataset, leaf_nodes):
+def add_path_validity_and_deviation_clauses(cnf: CNF,
+                                            literals: Dict[str, int],
+                                            dataset: np.ndarray,
+                                            leaf_nodes: List[int]) -> CNF:
     """
     Adds path validity and deviation clauses to the CNF object.
 
@@ -270,13 +338,13 @@ def add_path_validity_and_deviation_clauses(cnf, literals, dataset, leaf_nodes):
     and deviations for data points not ending in leaf nodes.
 
     Args:
-        cnf (CNF): The CNF object to which the clauses will be added.
-        literals (dict): A dictionary mapping literals to variable indices.
-        dataset (list): The dataset, a list of tuples representing data points.
-        leaf_nodes (list): Indices of leaf nodes.
+        cnf: The CNF object to which the clauses will be added.
+        literals: A dictionary mapping literals to variable indices.
+        dataset: The dataset, a list of tuples representing data points.
+        leaf_nodes: Indices of leaf nodes.
 
     Returns:
-        CNF: The updated CNF object with the added path validity and deviation clauses.
+        The updated CNF object with the added path validity and deviation clauses.
     """
     # Clause (5 and 6): Path validity from right traversal and left traversal
     for t in leaf_nodes:
