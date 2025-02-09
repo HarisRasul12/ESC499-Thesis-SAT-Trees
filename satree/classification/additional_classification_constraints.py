@@ -12,7 +12,7 @@ from pysat.card import CardEnc, IDPool, EncType
 from satree.classification.classification_clauses import construct_maxsat_clauses, add_classification_clauses
 
 
-def min_support(wcnf, literals, X, TL, min_support):
+def min_support(wcnf, literals, dataset, leaf_nodes, min_sup):
     """
     Add minimum support constraints to a WCNF object for decision tree leaf nodes.
 
@@ -21,15 +21,15 @@ def min_support(wcnf, literals, X, TL, min_support):
     support threshold. It encodes the constraint that at least `min_support` number of data
     points must be present at each leaf node of the decision tree.
 
-    Parameters:
-    - wcnf (WCNF): The weighted CNF object to which the constraints will be added.
-    - literals (dict): A dictionary mapping each literal to its unique integer identifier.
-    - X (list): The dataset containing data points.
-    - TL (list): The list of indices corresponding to the leaf nodes of the decision tree.
-    - min_support (int): The minimum number of data points required at each leaf node.
+    Args:
+        wcnf (wcnf): The weighted CNF object to which the constraints will be added.
+        literals (dict): A dictionary mapping each literal to its unique integer identifier.
+        dataset (list): The dataset containing data points.
+        leaf_nodes (list): The list of indices corresponding to the leaf nodes of the decision tree.
+        min_sup (int): The minimum number of data points required at each leaf node.
 
     Returns:
-    - WCNF: The updated WCNF object with the minimum support constraints included.
+        wcnf: The updated wcnf object with the minimum support constraints included.
 
     Each leaf node t in TL will have a minimum support constraint ensuring that
     at least `min_support` of the literals associated with it (z literals) must be True.
@@ -42,12 +42,12 @@ def min_support(wcnf, literals, X, TL, min_support):
     vpool = IDPool(start_from=max_var_index)
 
     # Add the minimum support constraints for each leaf node
-    for t in TL:
+    for t in leaf_nodes:
         # Collect all 'z' literals for the current leaf node
-        z_literals = [literals[f'z_{i}_{t}'] for i in range(len(X))]
+        z_literals = [literals[f'z_{i}_{t}'] for i in range(len(dataset))]
 
         # Encode the constraint that at least 'min_support' of these literals must be True
-        min_support_clauses = CardEnc.atleast(lits=z_literals, bound=min_support, vpool=vpool, encoding=EncType.seqcounter)
+        min_support_clauses = CardEnc.atleast(lits=z_literals, bound=min_sup, vpool=vpool, encoding=EncType.seqcounter)
 
         # Add the clauses for the minimum support constraint to the WCNF
         for clause in min_support_clauses.clauses:
@@ -59,48 +59,49 @@ def min_support(wcnf, literals, X, TL, min_support):
 
     return wcnf
 
-def build_clauses_fixed_tree_min_margin_constraint_add(literals, X, TB, TL, num_features, labels,true_labels, min_margin):
+def build_clauses_fixed_tree_min_margin_constraint_add(literals, dataset, branch_nodes, leaf_nodes, num_features, labels, true_labels, min_margin):
     """
-    Constructs the clauses for the SAT solver based on the decision tree encoding with MINIUM SPLT/MARGIN
-    Only works for numeircal problems fixed height problem 
+    Constructs the clauses for the SAT solver based on the decision tree encoding with MINIUM SPLIT/MARGIN
+    Only works for numerical problems fixed height problem
 
     Args:
         literals (dict): A dictionary mapping literals to variable indices.
-        X (list): The dataset, a list of tuples representing data points.
-        TB (list): Indices of branching nodes.
-        TL (list): Indices of leaf nodes.
+        dataset (list): The dataset, a list of tuples representing data points.
+        branch_nodes (list): Indices of branching nodes.
+        leaf_nodes (list): Indices of leaf nodes.
         num_features (int): Number of features in the dataset.
         labels (list): Possible class labels for the data points.
-        min_margin (int) : minumim margin constraint added 
+        true_labels (list): True class labels for the data points.
+        min_margin (int) : minimum margin constraint added
 
     Returns:
         WCNF: A WCNF object containing all the clauses, with hard clauses for the tree structure and soft clauses for maximizing correctly classified points
     """
     wcnf = WCNF()
     # Now the problem has become Partial MaxSAT - we will assign weights to the soft clauses Eq. (13). Eq(1-10,12) HARD clauses
-    wcnf = construct_maxsat_clauses(wcnf, literals, X, TB, TL, num_features, labels)
+    wcnf = construct_maxsat_clauses(wcnf, literals, dataset, branch_nodes, leaf_nodes, num_features, labels)
 
     # Clause (9) and (10): Redundant constraints to prune the search space
     # These clauses are optimizations
-    for t in TB:
+    for t in branch_nodes:
         for j in range(num_features):
             # Get the sorted indices of the data points by feature j
-            sorted_by_feature = sorted(range(len(X)), key=lambda k: X[k][j])
+            sorted_by_feature = sorted(range(len(dataset)), key=lambda k: dataset[k][j])
 
             # Clause (9): Data point with the M-th smallest feature value directed left
-            if 0 < min_margin <= len(X):
+            if 0 < min_margin <= len(dataset):
                 # We subtract 1 because Python indexing is zero-based
                 mth_smallest_index = sorted_by_feature[min_margin - 1]
                 wcnf.append([-literals[f'a_{t}_{j}'], literals[f's_{mth_smallest_index}_{t}']])
 
             # Clause (10): Data point with the M-th largest feature value directed right
-            if 0 < min_margin <= len(X):
+            if 0 < min_margin <= len(dataset):
                 # No need to subtract 1 when using negative indexing in Python
                 mth_largest_index = sorted_by_feature[-min_margin]
                 wcnf.append([-literals[f'a_{t}_{j}'], -literals[f's_{mth_largest_index}_{t}']])
 
     # Add the classification clauses to the CNF
-    wcnf = add_classification_clauses(wcnf, literals, X, TL, true_labels)
+    wcnf = add_classification_clauses(wcnf, literals, dataset, leaf_nodes, true_labels)
 
     return wcnf
 
@@ -111,16 +112,15 @@ def add_oblivious_tree_constraints(cnf, features, depth, literals, dataset=None,
     must select the same feature for splitting.
 
     Parameters:
-    - cnf (CNF or WCNF): The current CNF formula to which we will add the constraints.
-    - TB (list): Indices of branching nodes in the tree.
-    - features (list): List of features in the dataset.
-    - depth (int): The depth of the tree.
-    - literals (dict): A dictionary mapping literals to their unique integer identifiers.
-    - dataset (list): The dataset containing data points.
-    - tree_structure (str): The type of tree structure to consider (Oblivious or Oblivious2).
+        cnf (CNF or WCNF): The current CNF formula to which we will add the constraints.
+        features (list): List of features in the dataset.
+        depth (int): The depth of the tree.
+        literals (dict): A dictionary mapping literals to their unique integer identifiers.
+        dataset (list): The dataset containing data points.
+        tree_structure (str): The type of tree structure to consider (Oblivious or Oblivious2).
 
     Returns:
-    - cnf (CNF or WCNF): The CNF formula with the added constraints.
+        cnf (CNF or WCNF): The CNF formula with the added constraints.
     """
 
     def level_nodes(level, max_depth):

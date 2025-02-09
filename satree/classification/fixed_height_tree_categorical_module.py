@@ -13,39 +13,63 @@ from satree.treemodder.builder import build_complete_tree, create_literals
 from satree.classification.classification_clauses import add_clauses_for_features_and_paths, add_classification_clauses, add_feature_selection_clauses_for_branching_nodes
 
 
-def build_clauses_categorical_fixed(literals, X, TB, TL, num_features, features_categorical, features_numerical, labels,true_labels):
+def build_clauses_categorical_fixed(literals, dataset, branch_nodes, leaf_nodes, num_features, features_categorical, features_numerical, labels, true_labels):
     """
     Constructs the clauses for the SAT solver based on the decision tree encoding.
 
     Args:
         literals (dict): A dictionary mapping literals to variable indices.
-        X (list): The dataset, a list of tuples representing data points.
-        TB (list): Indices of branching nodes.
-        TL (list): Indices of leaf nodes.
+        dataset (list): The dataset, a list of tuples representing data points.
+        branch_nodes (list): Indices of branching nodes.
+        leaf_nodes (list): Indices of leaf nodes.
         num_features (int): Number of features in the dataset.
+        features_categorical (list): Indices of categorical features.
+        features_numerical (list): Indices of numerical features.
         labels (list): Possible class labels for the data points.
+        true_labels (list): True labels for the data points
 
     Returns:
         WCNF: A WCNF object containing all the clauses with unit weighst for cost
     """
     wcnf = WCNF()
-    wcnf = add_feature_selection_clauses_for_branching_nodes(wcnf, literals, TB, num_features)
-    wcnf = add_clauses_for_features_and_paths(wcnf, literals, X, TB, TL, num_features, features_categorical, features_numerical, labels)
-    wcnf = add_classification_clauses(wcnf, literals, X, TL, true_labels)
+    wcnf = add_feature_selection_clauses_for_branching_nodes(wcnf, literals, branch_nodes, num_features)
+    wcnf = add_clauses_for_features_and_paths(wcnf, literals, dataset, branch_nodes, leaf_nodes, num_features, features_categorical, features_numerical, labels)
+    wcnf = add_classification_clauses(wcnf, literals, dataset, leaf_nodes, true_labels)
 
     return wcnf
 
-def find_fixed_depth_tree_categorical(features, features_categorical, features_numerical, labels, true_labels_for_points, dataset, depth):
-    solution = "No solution exists"
-    tree_with_thresholds = None
-    tree = None
-    literals = None
-    cost = None
 
+def find_fixed_depth_tree_categorical(features, features_categorical, features_numerical, labels, true_labels_for_points, dataset, depth):
+    """
+    Finds a fixed-depth decision tree for a categorical classification problem using SAT encoding.
+
+    This function builds a complete decision tree of the specified depth, generates SAT literals, and
+    constructs CNF clauses using a fixed encoding that handles both categorical and numerical features.
+    It then attempts to solve the resulting CNF with a SAT solver. If a solution is found, the tree is
+    augmented with computed thresholds (or splits) for its branching nodes, and the tree is visualized by
+    rendering an image. If no solution is found, an error message is printed and "No solution" is returned.
+
+    Args:
+        features (list): List of feature identifiers used for splitting in the decision tree.
+        features_categorical (list): List of identifiers for categorical features.
+        features_numerical (list): List of identifiers for numerical features.
+        labels (list): List of possible class labels.
+        true_labels_for_points (list): The true labels for each data point in the dataset.
+        dataset (array-like): The dataset where each row represents a data point.
+        depth (int): The fixed depth to be used for constructing the decision tree.
+
+    Returns:
+        tuple: A tuple containing:
+            - tree_with_thresholds: The decision tree structure with thresholds assigned to branching nodes.
+            - literals (dict): A dictionary mapping SAT literal names to their corresponding variable indices.
+            - depth (int): The fixed depth of the decision tree.
+            - solution (list or str): The solution from the SAT solver if one is found, or "No solution" if unsolvable.
+            - cost (int or float): The cost associated with the SAT solution.
+    """
     tree, TB, TL = build_complete_tree(depth)
     literals = create_literals(TB, TL, features, labels, len(dataset), True)[0]
     wcnf = build_clauses_categorical_fixed(literals, dataset, TB, TL, len(features), features_categorical, features_numerical, labels,true_labels_for_points)
-    solution,cost = solve_wcnf(wcnf, literals, TL, tree, labels, features, dataset)
+    solution,cost = solve_wcnf(wcnf, literals, TL, tree, labels, features)
     
     if solution != "No solution exists":
         tree_with_thresholds = add_thresholds_categorical(tree, literals, solution, dataset, features_categorical)

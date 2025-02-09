@@ -19,15 +19,13 @@ def run_loandra_and_parse_results(loandra_path, execution_path):
     It runs Loandra with the provided execution path to the CNF file, extracts the minimum
     cost from Loandra's output, and interprets the model solution.
 
-    Parameters:
-    - loandra_path: A string representing the filesystem path to the directory containing the Loandra executable.
-    - execution_path: A string representing the filesystem path to the CNF file that Loandra will solve.
+    Args:
+        loandra_path: A string representing the filesystem path to the directory containing the Loandra executable.
+        execution_path: A string representing the filesystem path to the CNF file that Loandra will solve.
 
     Returns:
-    - min_cost: The minimum cost of the solution as reported by Loandra.
-    - model: A list of integers representing the model solution. Positive numbers correspond to literals
-             that are true, and negative numbers correspond to literals that are false. The index in the
-             list represents the literal number starting from 1.
+        min_cost: The minimum cost of the solution as reported by Loandra.
+        model: List of integers. Positive numbers are true literals, negative numbers are false literals.
 
     The function changes the current working directory to the Loandra path, executes the solver, and then
     may change back to the original directory. The stdout of the solver is captured and parsed to extract
@@ -68,7 +66,7 @@ def run_loandra_and_parse_results(loandra_path, execution_path):
     return model, min_cost
 
 
-def transform_tree_from_loandra(model, literals, leaf_indices, tree_structure, labels, features, dataset_x):
+def transform_tree_from_loandra(model, literals, leaf_indices, tree_structure, labels, features):
     """
     Attempts to complete tree from solutions 
 
@@ -92,7 +90,7 @@ def transform_tree_from_loandra(model, literals, leaf_indices, tree_structure, l
                     tree_structure[t]['label'] = label
                     break
          # Set details for branching nodes
-        set_branch_node_features(model, literals, tree_structure, features, dataset_x)
+        set_branch_node_features(model, literals, tree_structure, features)
         return model
     else:
         return "No solution exists"

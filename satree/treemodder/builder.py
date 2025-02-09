@@ -18,7 +18,7 @@ def build_complete_tree(depth):
     - TL (list): The indices of the leaf nodes within the tree list.
     """
     num_nodes = (2 ** (depth + 1)) - 1
-    tree_structure = [None] * num_nodes
+    tree_structure = [{} for _ in range(num_nodes)]
     TB, TL = [], []
 
     for node in range(num_nodes):
@@ -38,7 +38,7 @@ def build_complete_tree(depth):
     return tree_structure, TB, TL
 
 
-def create_literals(TB, TL, F, C, dataset_size, fixed_tree=False):
+def create_literals(branch_nodes, leaf_nodes, feature_indices, class_labels, dataset_size, fixed_tree=False):
     """
     Create the literals for the SAT solver based on the tree structure and dataset size.
 
@@ -49,11 +49,12 @@ def create_literals(TB, TL, F, C, dataset_size, fixed_tree=False):
     - 'g' literals for assigning class labels to leaf nodes.
 
     Parameters:
-    - TB (list): Indices of branching nodes in the tree.
-    - TL (list): Indices of leaf nodes in the tree.
-    - num_features (int): The number of features in the dataset.
-    - labels (list): The list of class labels for the dataset.
+    - branch_nodes (list): Indices of branching nodes in the tree.
+    - leaf_nodes (list): Indices of leaf nodes in the tree.
+    - feature_indices (list): Indices of features in the dataset.
+    - class_labels (list): The possible class labels for the data points.
     - dataset_size (int): The number of data points in the dataset.
+    - fixed_tree (bool, optional): A flag indicating if the tree structure is fixed, defaults to False.
 
     Returns:
     - literals (dict): A dictionary where keys are literal names and values are their corresponding indices for the SAT solver.
@@ -63,26 +64,26 @@ def create_literals(TB, TL, F, C, dataset_size, fixed_tree=False):
     current_index = 1
 
     # Create 'a' literals for feature splits at branching nodes
-    for t in TB:
-        for j in F:
+    for t in branch_nodes:
+        for j in feature_indices:
             literals[f'a_{t}_{j}'] = current_index
             current_index += 1
 
     # Create 's' literals for data points directed left or right at branching nodes
     for i in range(dataset_size):
-        for t in TB:
+        for t in branch_nodes:
             literals[f's_{i}_{t}'] = current_index
             current_index += 1
 
     # Create 'z' literals for data points ending up at leaf nodes
     for i in range(dataset_size):
-        for t in TL:
+        for t in leaf_nodes:
             literals[f'z_{i}_{t}'] = current_index
             current_index += 1
 
     # Create 'g' literals for labels at leaf nodes
-    for t in TL:
-        for c in C:
+    for t in leaf_nodes:
+        for c in class_labels:
             literals[f'g_{t}_{c}'] = current_index
             current_index += 1
 

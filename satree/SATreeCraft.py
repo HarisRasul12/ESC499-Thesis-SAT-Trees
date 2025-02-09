@@ -146,10 +146,10 @@ class SATreeCraft:
 
             if solution != "No solution exists":
                 # Transform the solution from Loandra to our internal format.
-                solution = transform_tree_from_loandra(solution, literals, TL, tree, labels, features, dataset)
+                solution = transform_tree_from_loandra(solution, literals, TL, tree, labels, features)
         else:
             # --- STANDARD SAT SOLVER PATH ---
-            solution = solve_cnf(cnf, literals, TL, tree, labels, features, dataset)
+            solution = solve_cnf(cnf, literals, TL, tree, labels, features)
             cost = None
 
         return solution, cost, cnf
@@ -303,10 +303,10 @@ class SATreeCraft:
             # --- LOANDRA BRANCH ---
             wcnf.to_file(execution_path)
             solution, cost = run_loandra_and_parse_results(loandra_path, execution_path)
-            solution = transform_tree_from_loandra(solution, literals, TL, tree, labels, features, dataset)
+            solution = transform_tree_from_loandra(solution, literals, TL, tree, labels, features)
         else:
             # --- STANDARD SOLVER BRANCH ---
-            solution, cost = solve_wcnf(wcnf, literals, TL, tree, labels, features, dataset)
+            solution, cost = solve_wcnf(wcnf, literals, TL, tree, labels, features)
 
         return solution, cost, wcnf
 
