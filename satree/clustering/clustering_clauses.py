@@ -1,33 +1,44 @@
+from typing import Any, Dict, List, Tuple, Union
+
+import numpy as np
 from pysat.formula import WCNF
-from satree.classification.classification_clauses import construct_feature_selection_clauses, add_redundant_constraints
+
+from satree.common_sat_clauses import construct_feature_selection_clauses, add_redundant_constraints
 
 
-def construct_clustering_clauses(literals, X, TB, TL, num_features, k_clusters, CL_pairs, ML_pairs, distance_classes):
+def construct_clustering_clauses(literals: Dict[str, int],
+                                 dataset: np.ndarray,
+                                 branch_nodes: List[int],
+                                 leaf_nodes: List[int],
+                                 num_features: int) -> WCNF:
     """
     Constructs the clauses for the SAT solver based on the decision tree encoding for clustering.
 
     Args:
         literals (dict): A dictionary mapping literals to variable indices.
-        X (list): The dataset, a list of tuples representing data points.
-        TB (list): Indices of branching nodes.
-        TL (list): Indices of leaf nodes.
+        dataset (list): The dataset, a list of tuples representing data points.
+        branch_nodes (list): Indices of branching nodes.
+        leaf_nodes (list): Indices of leaf nodes.
         num_features (int): Number of features in the dataset.
-        k_clusters (int): Number of clusters.
-        CL_pairs (list): Cannot-link pairs.
-        ML_pairs (list): Must-link pairs.
-        distance_classes (list): List of pairs in each distance class.
 
     Returns:
         WCNF: A WCNF object containing all the clauses, with hard clauses for the tree structure and soft clauses for maximizing correctly classified points.
     """
     wcnf = WCNF()
-    wcnf = construct_feature_selection_clauses(wcnf, literals, X, TB, TL, num_features)
-    wcnf = add_redundant_constraints(wcnf, literals, X, TB, num_features)
+    wcnf = construct_feature_selection_clauses(wcnf, literals, dataset, branch_nodes, leaf_nodes, num_features)
+    wcnf = add_redundant_constraints(wcnf, literals, dataset, branch_nodes, num_features)
 
     return wcnf
 
 
-def add_clustering_encodings(wcnf, literals, X, TL, k_clusters, CL_pairs, ML_pairs, distance_classes):
+def add_clustering_encodings(wcnf: WCNF,
+                             literals: Dict[str, int],
+                             dataset: np.ndarray,
+                             leaf_nodes: List[int],
+                             k_clusters: int,
+                             cl_pairs: List[Tuple[int, int]],
+                             ml_pairs: List[Tuple[int, int]],
+                             distance_classes: List[np.ndarray]) -> WCNF:
     """
     Adds clustering clauses to the WCNF object.
 
@@ -37,32 +48,32 @@ def add_clustering_encodings(wcnf, literals, X, TL, k_clusters, CL_pairs, ML_pai
     Args:
         wcnf (WCNF): The WCNF object to which the clauses will be added.
         literals (dict): A dictionary mapping literals to variable indices.
-        X (list): The dataset, a list of tuples representing data points.
-        TL (list): Indices of leaf nodes.
+        dataset (list): The dataset, a list of tuples representing data points.
+        leaf_nodes (list): Indices of leaf nodes.
         k_clusters (int): Number of clusters.
-        CL_pairs (list): Cannot-link pairs.
-        ML_pairs (list): Must-link pairs.
+        cl_pairs (list): Cannot-link pairs.
+        ml_pairs (list): Must-link pairs.
         distance_classes (list): List of pairs in each distance class.
 
     Returns:
         WCNF: The updated WCNF object with the added clustering clauses.
     """
     # Clause 16: Unary encoding of cluster labels in each leaf
-    for t in TL:
+    for t in leaf_nodes:
         for c in range(k_clusters - 2):
-            clause = [literals[f'g_{t}_{c}'], -literals[f'g_{t}_{c+1}']]
+            clause = [literals[f'g_{t}_{c}'], -literals[f'g_{t}_{c + 1}']]
             wcnf.append(clause)
 
     # Clause 17: Data points ending at leaf node t are assigned to cluster c if g_t,c is true
-    for t in TL:
-        for i in range(len(X)):
+    for t in leaf_nodes:
+        for i in range(len(dataset)):
             for c in range(k_clusters - 1):
                 clause = [-literals[f'z_{i}_{t}'], -literals[f'g_{t}_{c}'], literals[f'x_{i}_{c}']]
                 wcnf.append(clause)
 
     # Clause 18: Data points ending at leaf node t are NOT assigned to cluster c if g_t,c is false
-    for t in TL:
-        for i in range(len(X)):
+    for t in leaf_nodes:
+        for i in range(len(dataset)):
             for c in range(k_clusters - 1):
                 clause = [-literals[f'z_{i}_{t}'], literals[f'g_{t}_{c}'], -literals[f'x_{i}_{c}']]
                 wcnf.append(clause)
@@ -72,37 +83,37 @@ def add_clustering_encodings(wcnf, literals, X, TL, k_clusters, CL_pairs, ML_pai
         wcnf.append([-literals[f'x_{c}_{c}']])
 
     # Clause 20: If xi is not in cluster c, then there must be some xi' in cluster c-1, for all c < i
-    for i in range(1, len(X)):
+    for i in range(1, len(dataset)):
         for c in range(1, k_clusters - 1):
             clause = [-literals[f'x_{i}_{c}']]
             for i_prime in range(i):
-                clause.append(literals[f'x_{i_prime}_{c-1}'])
+                clause.append(literals[f'x_{i_prime}_{c - 1}'])
             wcnf.append(clause)
 
     # Clause 21: Ensure all clusters are non-empty by requiring at least one point is assigned to each cluster
-    clauseTW = [literals[f'x_{i}_{k_clusters - 2}'] for i in range(len(X))]
+    clauseTW = [literals[f'x_{i}_{k_clusters - 2}'] for i in range(len(dataset))]
     wcnf.append(clauseTW)
 
     # Clause 22: Ensure that pairs in CL are not clustered in the first cluster (0-indexed)
-    for i, i_prime in CL_pairs:
+    for i, i_prime in cl_pairs:
         wcnf.append([literals[f'x_{i}_0'], literals[f'x_{i_prime}_0']])
 
     # Clause 23: Ensure that pairs in CL are not clustered in the last cluster (k-2 in 0-indexed system)
-    for i, i_prime in CL_pairs:
+    for i, i_prime in cl_pairs:
         wcnf.append([-literals[f'x_{i}_{k_clusters - 2}'], -literals[f'x_{i_prime}_{k_clusters - 2}']])
 
     # Clause 24: Unconditional separating clauses for cannot-link pairs, applied to clusters from 0 to k-3
-    for (i, i_prime) in CL_pairs:
+    for (i, i_prime) in cl_pairs:
         for c in range(k_clusters - 2):
             wcnf.append([
                 -literals[f'x_{i}_{c}'],
                 -literals[f'x_{i_prime}_{c}'],
-                literals[f'x_{i}_{c+1}'],
-                literals[f'x_{i_prime}_{c+1}']
+                literals[f'x_{i}_{c + 1}'],
+                literals[f'x_{i_prime}_{c + 1}']
             ])
 
     # Clause 25 and 26: Ensure that pairs in ML are clustered together for each cluster
-    for i, i_prime in ML_pairs:
+    for i, i_prime in ml_pairs:
         for c in range(k_clusters - 1):
             wcnf.append([-literals[f'x_{i}_{c}'], literals[f'x_{i_prime}_{c}']])  # clause 25
             wcnf.append([literals[f'x_{i}_{c}'], -literals[f'x_{i_prime}_{c}']])  # clause 26
@@ -117,7 +128,8 @@ def add_clustering_encodings(wcnf, literals, X, TL, k_clusters, CL_pairs, ML_pai
     for w, pairs_array in enumerate(distance_classes):
         for pair in pairs_array:
             i, i_prime = pair
-            wcnf.append([literals[f'bw_m_{w}'], -literals[f'x_{i}_{k_clusters - 2}'], -literals[f'x_{i_prime}_{k_clusters - 2}']])
+            wcnf.append([literals[f'bw_m_{w}'], -literals[f'x_{i}_{k_clusters - 2}'],
+                         -literals[f'x_{i_prime}_{k_clusters - 2}']])
 
     # Clause 29: Conditional co-separation for non-adjacent clusters
     for w, pairs_array in enumerate(distance_classes):
@@ -125,12 +137,16 @@ def add_clustering_encodings(wcnf, literals, X, TL, k_clusters, CL_pairs, ML_pai
             i, i_prime = pair
             for c in range(k_clusters - 2):
                 wcnf.append([literals[f'bw_m_{w}'], -literals[f'x_{i}_{c}'],
-                             -literals[f'x_{i_prime}_{c}'], literals[f'x_{i}_{c+1}'], literals[f'x_{i_prime}_{c+1}']])
+                             -literals[f'x_{i_prime}_{c}'], literals[f'x_{i}_{c + 1}'],
+                             literals[f'x_{i_prime}_{c + 1}']])
 
     return wcnf
 
 
-def add_distance_class_clauses(wcnf, literals, k_clusters, distance_classes):
+def add_distance_class_clauses(wcnf: WCNF,
+                               literals: Dict[str, int],
+                               k_clusters: int,
+                               distance_classes: List[np.ndarray]) -> WCNF:
     """
     Adds distance class clauses to the WCNF object.
 

@@ -22,7 +22,7 @@ import numpy as np
 from pysat.formula import WCNF
 from pysat.card import CardEnc, IDPool, EncType
 
-from satree.classification.classification_clauses import construct_maxsat_clauses, add_classification_clauses
+from satree.classification.sat_clauses import construct_maxsat_clauses, add_classification_clauses
 
 
 def min_support(wcnf: WCNF,

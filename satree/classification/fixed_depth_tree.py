@@ -36,10 +36,11 @@ import numpy as np
 from pysat.formula import WCNF
 from pysat.examples.rc2 import RC2
 
-from satree.classification.min_height_tree_module import set_branch_node_features, add_thresholds, visualize_tree
 from satree.treemodder.builder import build_complete_tree, create_literals
-from satree.classification.classification_clauses import construct_maxsat_clauses, add_classification_clauses, \
-    add_redundant_constraints
+
+from satree.common_sat_clauses import add_redundant_constraints
+from satree.classification.min_depth_tree import set_branch_node_features, add_thresholds, visualize_tree
+from satree.classification.sat_clauses import construct_maxsat_clauses, add_classification_clauses
 
 
 def build_clauses_fixed_tree(literals: Dict[str, int],

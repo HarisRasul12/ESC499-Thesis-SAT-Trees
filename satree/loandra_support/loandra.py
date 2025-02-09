@@ -9,7 +9,7 @@ file as input and returns the minimum cost and the model solution.
 import os
 import subprocess
 
-from satree.classification.min_height_tree_module import set_branch_node_features
+from satree.classification.min_depth_tree import set_branch_node_features
 
 def run_loandra_and_parse_results(loandra_path, execution_path):
     """

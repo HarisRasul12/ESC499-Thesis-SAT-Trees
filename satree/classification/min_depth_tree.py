@@ -39,9 +39,10 @@ from graphviz import Digraph
 from pysat.formula import CNF
 from pysat.solvers import Solver
 
-from satree.classification.classification_core import compute_numerical_threshold
+from satree.classification.core import compute_numerical_threshold
 from satree.treemodder.builder import build_complete_tree, create_literals
-from satree.classification.classification_clauses import add_redundant_constraints, construct_maxsat_clauses
+from satree.classification.sat_clauses import construct_maxsat_clauses
+from satree.common_sat_clauses import add_redundant_constraints
 
 
 def build_clauses(literals: Dict[str, int],

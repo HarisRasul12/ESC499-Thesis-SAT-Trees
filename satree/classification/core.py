@@ -23,7 +23,7 @@ trees, enabling the formulation of constraints that ensure proper data point rou
 selection, and threshold determination for both categorical and numerical data.
 """
 
-from typing import List, Tuple, Callable, Optional
+from typing import List, Callable, Optional
 
 import numpy as np
 
@@ -61,55 +61,6 @@ def compute_ordering_with_categorical(dataset: np.ndarray,
         ordering = np.argsort(numerical_values).tolist()
 
     return ordering
-
-
-def get_ancestors(node_index: int, side: str) -> List[int]:
-    """
-    Returns the indices of the ancestors of a node in a binary tree based on its implicit array representation.
-
-    The function traverses upward from the given node index and collects the indices of ancestors that are on
-    the specified side. The binary tree is assumed to be represented in an array where, for any node at index i,
-    its parent is at index (i - 1) // 2.
-
-    Args:
-        node_index: The index of the node whose ancestors are to be found.
-        side: The side of the ancestors to collect ('left' or 'right'). For example, if 'left', only ancestors
-                    where the current node is a left child are included.
-
-    Returns:
-        A list of ancestor indices on the specified side.
-    """
-    ancestors = []
-    current_index = node_index
-    while True:
-        parent_index = (current_index - 1) // 2
-        if parent_index < 0:
-            break
-        # Check if current node is a left or right child
-        if (side == 'left' and current_index % 2 == 1) or (side == 'right' and current_index % 2 == 0):
-            ancestors.append(parent_index)
-        current_index = parent_index
-    return ancestors
-
-
-def compute_ordering(dataset: np.ndarray,
-                     feature_index: int) -> List[Tuple[int, int]]:
-    """
-    Computes the ordering of data point indices for a specified feature.
-
-    The function sorts the data points based on the value of the specified feature and returns a list of tuples,
-    each containing a pair of consecutive data point indices from the sorted order.
-
-    Args:
-        dataset: A list of data points (each data point can be a tuple or list).
-        feature_index: The index of the feature used for sorting.
-
-    Returns:
-        A list of tuples, where each tuple contains a pair (i, j) representing consecutive data point indices
-                    in the sorted order.
-    """
-    sorted_indices = sorted(range(len(dataset)), key=lambda i: float(dataset[i][feature_index]))
-    return [(sorted_indices[i], sorted_indices[i + 1]) for i in range(len(sorted_indices) - 1)]
 
 
 def compute_numerical_threshold(feature_values: np.ndarray,

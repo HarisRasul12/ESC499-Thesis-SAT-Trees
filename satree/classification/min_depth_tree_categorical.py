@@ -34,11 +34,11 @@ from typing import List, Dict, Any, Tuple, Union
 import numpy as np
 from pysat.formula import CNF
 
-from satree.classification.classification_core import compute_numerical_threshold
-from satree.classification.min_height_tree_module import solve_cnf, visualize_tree
+from satree.classification.core import compute_numerical_threshold
+from satree.classification.min_depth_tree import solve_cnf, visualize_tree
 from satree.treemodder.builder import build_complete_tree, create_literals
-from satree.classification.classification_clauses import add_clauses_for_features_and_paths, \
-    add_feature_selection_clauses_for_branching_nodes
+from satree.classification.sat_clauses import add_clauses_for_features_and_paths
+from satree.common_sat_clauses import add_feature_selection_clauses_for_branching_nodes
 
 
 def build_clauses_categorical(literals: Dict[str, int],

@@ -15,16 +15,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pysat.formula import WCNF
 
-from satree.classification.min_height_tree_module import build_clauses, add_thresholds, solve_cnf, visualize_tree
 from satree.treemodder.builder import build_complete_tree, create_literals
-from satree.classification.fixed_height_tree_module import build_clauses_fixed_tree, solve_wcnf
-from satree.classification.min_height_tree_categorical_module import build_clauses_categorical, add_thresholds_categorical
-from satree.classification.fixed_height_tree_categorical_module import build_clauses_categorical_fixed
-from satree.classification.additional_classification_constraints import add_oblivious_tree_constraints, min_support, build_clauses_fixed_tree_min_margin_constraint_add
 
-from satree.clustering.clustering_advanced import build_clauses_cluster_tree_MD, create_distance_classes, solve_wcnf_clustering, assign_clusters_and_diameters
-from satree.clustering.clustering_minsplit import build_clauses_cluster_tree_MD_MS, process_clustering_solution
-from satree.clustering.clustering_smartPairs import build_clauses_cluster_tree_MD_MS_Smart_Pair
+from satree.classification.min_depth_tree import build_clauses, add_thresholds, solve_cnf, visualize_tree
+from satree.classification.fixed_depth_tree import build_clauses_fixed_tree, solve_wcnf
+from satree.classification.min_depth_tree_categorical import build_clauses_categorical, add_thresholds_categorical
+from satree.classification.fixed_depth_tree_categorical import build_clauses_categorical_fixed
+from satree.classification.additional_constraints import add_oblivious_tree_constraints, min_support, build_clauses_fixed_tree_min_margin_constraint_add
+
+from satree.clustering.clustering_advanced import build_clauses_cluster_tree_md, create_distance_classes, solve_wcnf_clustering, assign_clusters_and_diameters
+from satree.clustering.clustering_minsplit import build_clauses_cluster_tree_md_ms, process_clustering_solution
+from satree.clustering.clustering_smartPairs import build_clauses_cluster_tree_md_ms_smart_pair
 from satree.clustering.core import create_literals_cluster_tree, create_literal_matrices_modular
 
 from satree.loandra_support.loandra import run_loandra_and_parse_results, transform_tree_from_loandra
@@ -419,7 +420,7 @@ class SATreeCraft:
         tree_structure, TB, TL = build_complete_tree(depth)
 
         literals = create_literals_cluster_tree(TB, TL, features, k_clusters, dataset_size, distance_classes, False)
-        wcnf = build_clauses_cluster_tree_MD(literals, dataset, TB, TL, num_features, k_clusters,
+        wcnf = build_clauses_cluster_tree_md(literals, dataset, TB, TL, num_features, k_clusters,
                                              CL_pairs, ML_pairs, distance_classes)
 
         if use_loandra:
@@ -435,8 +436,8 @@ class SATreeCraft:
             solution=solution,
             dataset_size=len(dataset),
             k_clusters=k_clusters,
-            TB=TB,
-            TL=TL,
+            branch_nodes=TB,
+            leaf_nodes=TL,
             num_features=len(features),
             distance_classes=distance_classes,
             bicriteria=False
@@ -461,10 +462,10 @@ class SATreeCraft:
 
         # Build the WCNF using smart pairs if enabled.
         if self.smart_pairs:
-            wcnf = build_clauses_cluster_tree_MD_MS_Smart_Pair(literals, dataset, TB, TL, num_features, k_clusters,
+            wcnf = build_clauses_cluster_tree_md_ms_smart_pair(literals, dataset, TB, TL, num_features, k_clusters,
                                                                CL_pairs, ML_pairs, distance_classes)
         else:
-            wcnf = build_clauses_cluster_tree_MD_MS(literals, dataset, TB, TL, num_features, k_clusters,
+            wcnf = build_clauses_cluster_tree_md_ms(literals, dataset, TB, TL, num_features, k_clusters,
                                                     CL_pairs, ML_pairs, distance_classes)
 
         if use_loandra:
@@ -478,8 +479,8 @@ class SATreeCraft:
                 solution=solution,
                 dataset_size=len(dataset),
                 k_clusters=k_clusters,
-                TB=TB,
-                TL=TL,
+                branch_nodes=TB,
+                leaf_nodes=TL,
                 num_features=len(features),
                 distance_classes=distance_classes,
                 bicriteria=True

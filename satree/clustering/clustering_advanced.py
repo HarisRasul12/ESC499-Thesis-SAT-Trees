@@ -5,17 +5,21 @@ Module for solving clustering problems using a complete binary tree and SAT solv
 to solve clustering problems using a complete binary tree and SAT solvers.
 """
 
+from typing import Any, List, Tuple, Dict
 from itertools import combinations
 from collections import OrderedDict
 
 import numpy as np
 from scipy.spatial.distance import euclidean
 from pysat.examples.rc2 import RC2
+from pysat.formula import WCNF
 
 from satree.clustering.clustering_clauses import construct_clustering_clauses, add_clustering_encodings
 
 
-def create_distance_classes(dataset, epsilon=0):
+def create_distance_classes(dataset: np.ndarray,
+                            epsilon: float = 0) -> Tuple[
+    OrderedDict[str, List[Tuple[Tuple[int, int], float]]], OrderedDict[str, List[Tuple[int, int]]], List[np.ndarray]]:
     """
     Create non-overlapping distance classes for all unique pairs of data points.
 
@@ -30,9 +34,10 @@ def create_distance_classes(dataset, epsilon=0):
     - OrderedDict: An ordered dictionary where keys are class labels (D1, D2, ...) and
       values are lists of point index pairs belonging to each distance class.
     """
-    def euclidean_distance(point1, point2):
-        return np.sqrt(np.sum((np.array(point1) - np.array(point2))**2))
-    
+
+    def euclidean_distance(p1, p2):
+        return np.sqrt(np.sum((np.array(p1) - np.array(p2)) ** 2))
+
     distances = {}
     for (idx1, point1), (idx2, point2) in combinations(enumerate(dataset), 2):
         dist = euclidean_distance(point1, point2)
@@ -56,25 +61,34 @@ def create_distance_classes(dataset, epsilon=0):
             distance_classes_with_dist[f'D{current_class_label}'] = [(pair, dist)]
             distance_classes_simplified[f'D{current_class_label}'] = [pair]
             current_class_label += 1
-    
+
     distance_pairs_array = [np.array(pairs) for pairs in distance_classes_simplified.values()]
     distance_classes = distance_pairs_array
-    
-    return distance_classes_with_dist, distance_classes_simplified, distance_classes
-    
 
-def build_clauses_cluster_tree_MD(literals, X, TB, TL, num_features, k_clusters,
-                                  CL_pairs, ML_pairs, distance_classes):
+    return distance_classes_with_dist, distance_classes_simplified, distance_classes
+
+
+def build_clauses_cluster_tree_md(literals: Dict[str, int],
+                                  dataset: np.ndarray,
+                                  branch_nodes: List[int],
+                                  leaf_nodes: List[int],
+                                  num_features: int,
+                                  k_clusters: int,
+                                  cl_pairs: List[Tuple[int, int]],
+                                  ml_pairs: List[Tuple[int, int]],
+                                  distance_classes: List[np.ndarray]) -> WCNF:
     """
     Constructs the clauses for the SAT solver based on the decision tree encoding. Now includes MAX SOLVER PROBLEM FOR FIXED HEIGHT 
 
     Args:
         literals (dict): A dictionary mapping literals to variable indices.
-        X (list): The dataset, a list of tuples representing data points.
-        TB (list): Indices of branching nodes.
-        TL (list): Indices of leaf nodes.
+        dataset (list): The dataset, a list of tuples representing data points.
+        branch_nodes (list): Indices of branching nodes.
+        leaf_nodes (list): Indices of leaf nodes.
         num_features (int): Number of features in the dataset.
         k_clusters: number of clusters, will need to turn this into a list for operations on each clause
+        cl_pairs (list): Cannot-link pairs.
+        ml_pairs (list): Must-link pairs.
         distance_classes (list): list pairs in ecah distace classes  
 
     Returns:
@@ -83,15 +97,16 @@ def build_clauses_cluster_tree_MD(literals, X, TB, TL, num_features, k_clusters,
     ##################################################  BASE TREE ENCODINGS ################################################
 
     # Now the problem has become Partial MaxSAT - we will assign weights to the soft clauses Eq. (13). Eq(1-10,12) HARD clauses
-    wcnf = construct_clustering_clauses(literals, X, TB, TL, num_features, k_clusters, CL_pairs, ML_pairs, distance_classes)
-    wcnf = add_clustering_encodings(wcnf, literals, X, TL, k_clusters, CL_pairs, ML_pairs, distance_classes)
+    wcnf = construct_clustering_clauses(literals, dataset, branch_nodes, leaf_nodes, num_features)
+    wcnf = add_clustering_encodings(wcnf, literals, dataset, leaf_nodes, k_clusters, cl_pairs, ml_pairs,
+                                    distance_classes)
 
     # Clause 32: Ensures that if bw^-_w is true, then the points in distance class w 
     # cannot be clustered with the points in distance class w-1 if bw^-_(w-1) is false.
     for w in range(1, len(distance_classes)):  # Starting from 1 since we're checking w against w-1
         # print('clause 32: ', [-literals[f'bw_m_{w}'], literals[f'bw_m_{w-1}']])
-        wcnf.append([-literals[f'bw_m_{w}'], literals[f'bw_m_{w-1}']])
-    
+        wcnf.append([-literals[f'bw_m_{w}'], literals[f'bw_m_{w - 1}']])
+
     # Clause 37: For each distance class w, we add a soft clause for the corresponding b^-_w literal
     # to encourage points within that class to be clustered separately
     # Max diameter solve problem
@@ -102,7 +117,7 @@ def build_clauses_cluster_tree_MD(literals, X, TB, TL, num_features, k_clusters,
     return wcnf
 
 
-def solve_wcnf_clustering(wcnf):
+def solve_wcnf_clustering(wcnf: WCNF) -> List[int]:
     """
     Solve the weighted CNF problem and return the model if found.
     """
@@ -111,7 +126,9 @@ def solve_wcnf_clustering(wcnf):
     return solution if solution is not None else []
 
 
-def assign_clusters_and_diameters(x_i_c_matrix, dataset, k_clusters):
+def assign_clusters_and_diameters(x_i_c_matrix: np.ndarray,
+                                  dataset: np.ndarray,
+                                  k_clusters: int) -> Tuple[Dict[int, List[int]], Dict[int, float]]:
     """
     Assigns data points to clusters based on the unique patterns in the x_i_c_matrix
     and calculates the maximum diameter for each cluster.
@@ -128,12 +145,12 @@ def assign_clusters_and_diameters(x_i_c_matrix, dataset, k_clusters):
     # Assign clusters based on unique patterns in the x_i_c_matrix
     unique_patterns = np.unique(x_i_c_matrix, axis=0)
     pattern_to_cluster = {tuple(pattern): cluster_id for cluster_id, pattern in enumerate(unique_patterns)}
-    
+
     cluster_assignments = {cluster_id: [] for cluster_id in range(k_clusters)}
     for data_point_index, pattern in enumerate(x_i_c_matrix):
         cluster_id = pattern_to_cluster[tuple(pattern)]
         cluster_assignments[cluster_id].append(data_point_index)
-    
+
     # Calculate the maximum diameter for each cluster
     cluster_diameters = {}
     for cluster_id, data_points in cluster_assignments.items():
@@ -144,92 +161,5 @@ def assign_clusters_and_diameters(x_i_c_matrix, dataset, k_clusters):
                 dist = euclidean(dataset[data_points[i]], dataset[data_points[j]])
                 max_diameter = max(max_diameter, dist)
         cluster_diameters[cluster_id] = max_diameter
-    
+
     return cluster_assignments, cluster_diameters
-
-
-# if __name__ == "__main__":
-# #     # Define the test dataset parameters
-#     # Data points
-#     F = np.array(['0', '1'])
-#     dataset = np.array([[1, 1], [1, 2], [7, 7], [7, 8], [15,5],[15,6]])  # Dataset X
-#     dataset_size = len(dataset)
-#     epsilon = 1 
-#     k_clusters = 3
-#     depth = 3
-
-#     # CL_pairs = np.array([])
-#     ML_pairs = np.array([])
-#     CL_pairs = np.array([[2,3]])
-#     # # ML_pairs = np.array([[4,5],[0,1],[2,3]])
-
-#     cluster_assignments, cluster_diameters = clustering_problem(dataset=dataset,
-#                                                                 features=F,
-#                                                                 k_clusters=k_clusters,
-#                                                                 depth = depth,
-#                                                                 epsilon= epsilon,
-#                                                                 CL_pairs=CL_pairs,
-#                                                                 ML_pairs= ML_pairs)
-
-#     print(cluster_assignments)
-#     print(cluster_diameters)
-
-#     # Plot the clusters
-#     plot_and_save_clusters(dataset, cluster_assignments, k_clusters)
-
-
-#     # dist1, dist2, distance_classes = create_distance_classes(dataset, epsilon)
-    
-#     # print('distance classes created: ')
-#     # print(distance_classes)
-#     # # print(dist1)
-#     # print("\nNumber of distance classes: ")
-#     # print(len(distance_classes))
-
-#     # k_clusters = 2
-#     # depth = 2
-#     # tree_structure, TB, TL = build_complete_tree_clustering(depth)
-#     # # print(tree_structure)
-    
-#     # literals = create_literals_cluster_tree(TB, TL, F, k_clusters, dataset_size,distance_classes, False)
-#     # print("\nliterals map: ")
-#     # for key, value in literals.items():
-#     #     print(f'{key}: {value}')
-
-#     # num_features = len(F)
-#     # CL_pairs = np.array([])
-#     # ML_pairs = np.array([])
-#     # # CL_pairs = np.array([[2,3]])
-#     # # ML_pairs = np.array([[4,5],[0,1],[2,3]])
-#     # X = dataset
-
-#     # wcnf = build_clauses_cluster_tree_MD(literals, X, TB, TL, num_features, k_clusters,
-#     #                               CL_pairs, ML_pairs, distance_classes)
-#     # # print(wcnf)
-#     # solution = solve_wcnf_clustering(wcnf)
-#     # print('\nthe solution: ')
-#     # print(solution)
-
-#     # # Call the function with the appropriate parameters
-#     # print('\nsolution breakdown:\n')
-#     # a_matrix, s_matrix, z_matrix, g_matrix, x_i_c_matrix, bw_m_vector = create_literal_matrices(
-#     #     literals=literals,
-#     #     solution=solution,
-#     #     dataset_size=len(dataset),
-#     #     k_clusters=k_clusters,
-#     #     TB=TB,
-#     #     TL=TL,
-#     #     num_features=len(F),
-#     #     distance_classes= distance_classes
-#     # )
-
-#     # # Call the function with the example dataset and number of clusters
-#     # cluster_assignments_example, cluster_diameters_example = assign_clusters_and_diameters(
-#     #     x_i_c_matrix, dataset, k_clusters
-#     # )
-
-#     # print(cluster_assignments)
-#     # print(cluster_diameters)
-
-#     # # Plot the clusters
-#     # plot_and_save_clusters(dataset, cluster_assignments, k_clusters)
