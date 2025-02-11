@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple, Union
+from typing import Dict, List
 
 import numpy as np
 from pysat.formula import WCNF
@@ -36,8 +36,8 @@ def add_clustering_encodings(wcnf: WCNF,
                              dataset: np.ndarray,
                              leaf_nodes: List[int],
                              k_clusters: int,
-                             cl_pairs: List[Tuple[int, int]],
-                             ml_pairs: List[Tuple[int, int]],
+                             cl_pairs: np.ndarray,
+                             ml_pairs: np.ndarray,
                              distance_classes: List[np.ndarray]) -> WCNF:
     """
     Adds clustering clauses to the WCNF object.

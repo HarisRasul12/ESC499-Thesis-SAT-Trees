@@ -4,7 +4,7 @@
 This module contains the functions to solve the clustering minimum split problem using a SAT solver.
 """
 
-from typing import Any, Dict, List, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 from pysat.formula import WCNF
@@ -24,8 +24,8 @@ def build_clauses_cluster_tree_md_ms(literals: Dict[str, int],
                                      leaf_nodes: List[int],
                                      num_features: int,
                                      k_clusters: int,
-                                     cl_pairs: List[Tuple[int, int]],
-                                     ml_pairs: List[Tuple[int, int]],
+                                     cl_pairs: np.ndarray,
+                                     ml_pairs: np.ndarray,
                                      distance_classes: List[np.ndarray]) -> WCNF:
     """
     Constructs the clauses for the SAT solver based on the decision tree encoding. Now includes MAX SOLVER PROBLEM FOR FIXED HEIGHT 
@@ -107,8 +107,7 @@ def min_split_clustering_problem_smart_pair(dataset: np.ndarray,
                                             depth: int,
                                             epsilon: float = 0,
                                             cl_pairs: np.ndarray = np.array([]),
-                                            ml_pairs: np.ndarray = np.array([])) -> Tuple[
-    Dict[int, List[int]], Dict[int, float]]:
+                                            ml_pairs: np.ndarray = np.array([])) -> tuple:
     """
     Solves a clustering minimum split problem by constructing a complete binary tree of a specified depth,
     creating literals for a SAT solver, building clauses for the SAT problem, and then solving

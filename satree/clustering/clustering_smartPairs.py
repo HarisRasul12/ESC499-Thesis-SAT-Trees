@@ -5,7 +5,7 @@ This module contains functions to solve the clustering problem using a minimum h
 minimum split criteria.
 """
 
-from typing import Any, Dict, List, Tuple
+from typing import Dict, List
 
 import numpy as np
 from scipy.spatial.distance import euclidean
@@ -26,8 +26,8 @@ def build_clauses_cluster_tree_md_ms_smart_pair(literals: Dict[str, int],
                                                 leaf_nodes: List[int],
                                                 num_features: int,
                                                 k_clusters: int,
-                                                cl_pairs: List[Tuple[int, int]],
-                                                ml_pairs: List[Tuple[int, int]],
+                                                cl_pairs: np.ndarray,
+                                                ml_pairs: np.ndarray,
                                                 distance_classes: List[np.ndarray]) -> WCNF:
     """
     Constructs the clauses for the SAT solver based on the decision tree encoding. Now includes MAX SOLVER PROBLEM FOR FIXED HEIGHT 
@@ -107,8 +107,7 @@ def min_split_clustering_problem_smart_pair(dataset: np.ndarray,
                                             depth: int,
                                             epsilon: float = 0,
                                             cl_pairs: np.ndarray = np.array([]),
-                                            ml_pairs: np.ndarray = np.array([])) -> Tuple[
-    Dict[int, List[int]], Dict[int, float]]:
+                                            ml_pairs: np.ndarray = np.array([])) -> tuple:
     """
     Solves a clustering minimum split BICRITERIA problem by constructing a complete binary tree of a specified depth,
     creating literals for a SAT solver, building clauses for the SAT problem, and then solving

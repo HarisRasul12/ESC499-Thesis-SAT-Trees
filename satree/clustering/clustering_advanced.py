@@ -5,7 +5,7 @@ Module for solving clustering problems using a complete binary tree and SAT solv
 to solve clustering problems using a complete binary tree and SAT solvers.
 """
 
-from typing import Any, List, Tuple, Dict
+from typing import List, Tuple, Dict
 from itertools import combinations
 from collections import OrderedDict
 
@@ -74,8 +74,8 @@ def build_clauses_cluster_tree_md(literals: Dict[str, int],
                                   leaf_nodes: List[int],
                                   num_features: int,
                                   k_clusters: int,
-                                  cl_pairs: List[Tuple[int, int]],
-                                  ml_pairs: List[Tuple[int, int]],
+                                  cl_pairs: np.ndarray,
+                                  ml_pairs: np.ndarray,
                                   distance_classes: List[np.ndarray]) -> WCNF:
     """
     Constructs the clauses for the SAT solver based on the decision tree encoding. Now includes MAX SOLVER PROBLEM FOR FIXED HEIGHT 
