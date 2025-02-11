@@ -12,17 +12,17 @@ def construct_clustering_clauses(literals: Dict[str, int],
                                  leaf_nodes: List[int],
                                  num_features: int) -> WCNF:
     """
-    Constructs the clauses for the SAT solver based on the decision tree encoding for clustering.
+    Construct clustering clauses for the decision tree SAT encoding.
 
     Args:
-        literals (dict): A dictionary mapping literals to variable indices.
-        dataset (list): The dataset, a list of tuples representing data points.
-        branch_nodes (list): Indices of branching nodes.
-        leaf_nodes (list): Indices of leaf nodes.
-        num_features (int): Number of features in the dataset.
+        literals: A dictionary mapping literal names to variable indices.
+        dataset: The dataset containing data points.
+        branch_nodes: Indices of branching nodes.
+        leaf_nodes: Indices of leaf nodes.
+        num_features: Number of features in the dataset.
 
     Returns:
-        WCNF: A WCNF object containing all the clauses, with hard clauses for the tree structure and soft clauses for maximizing correctly classified points.
+        A weighted CNF object containing clustering clauses (both hard and soft constraints).
     """
     wcnf = WCNF()
     wcnf = construct_feature_selection_clauses(wcnf, literals, dataset, branch_nodes, leaf_nodes, num_features)
@@ -40,23 +40,20 @@ def add_clustering_encodings(wcnf: WCNF,
                              ml_pairs: np.ndarray,
                              distance_classes: List[np.ndarray]) -> WCNF:
     """
-    Adds clustering clauses to the WCNF object.
-
-    This function adds various clauses to ensure proper clustering, including unary encoding of cluster labels,
-    assignment of data points to clusters, and constraints for must-link and cannot-link pairs.
+    Add additional clustering encoding clauses to the weighted CNF object.
 
     Args:
-        wcnf (WCNF): The WCNF object to which the clauses will be added.
-        literals (dict): A dictionary mapping literals to variable indices.
-        dataset (list): The dataset, a list of tuples representing data points.
-        leaf_nodes (list): Indices of leaf nodes.
-        k_clusters (int): Number of clusters.
-        cl_pairs (list): Cannot-link pairs.
-        ml_pairs (list): Must-link pairs.
-        distance_classes (list): List of pairs in each distance class.
+        wcnf: The weighted CNF object to update.
+        literals: A dictionary mapping literal names to variable indices.
+        dataset: The dataset containing data points.
+        leaf_nodes: Indices of leaf nodes.
+        k_clusters: Total number of clusters.
+        cl_pairs: Array of cannot-link pairs.
+        ml_pairs: Array of must-link pairs.
+        distance_classes: List of arrays representing distance classes.
 
     Returns:
-        WCNF: The updated WCNF object with the added clustering clauses.
+        The updated weighted CNF object with clustering encoding clauses added.
     """
     # Clause 16: Unary encoding of cluster labels in each leaf
     for t in leaf_nodes:
@@ -148,19 +145,16 @@ def add_distance_class_clauses(wcnf: WCNF,
                                k_clusters: int,
                                distance_classes: List[np.ndarray]) -> WCNF:
     """
-    Adds distance class clauses to the WCNF object.
-
-    This function adds various clauses to ensure proper clustering based on distance classes,
-    including constraints for must-link and cannot-link pairs within distance classes.
+    Add distance class constraints to the weighted CNF object.
 
     Args:
-        wcnf (WCNF): The WCNF object to which the clauses will be added.
-        literals (dict): A dictionary mapping literals to variable indices.
-        k_clusters (int): Number of clusters.
-        distance_classes (list): List of pairs in each distance class.
+        wcnf: The weighted CNF object to update.
+        literals: A dictionary mapping literal names to variable indices.
+        k_clusters: The total number of clusters.
+        distance_classes: List of arrays, each representing a distance class.
 
     Returns:
-        WCNF: The updated WCNF object with the added distance class clauses.
+        The updated weighted CNF object with distance class clauses.
     """
     # Clause 30: If b^+_w is true, then pairs (i, i') in distance class w must be in the same cluster
     for w, pairs_array in enumerate(distance_classes):

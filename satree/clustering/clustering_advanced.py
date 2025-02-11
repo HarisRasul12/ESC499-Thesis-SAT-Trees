@@ -21,18 +21,17 @@ def create_distance_classes(dataset: np.ndarray,
                             epsilon: float = 0) -> Tuple[
     OrderedDict[str, List[Tuple[Tuple[int, int], float]]], OrderedDict[str, List[Tuple[int, int]]], List[np.ndarray]]:
     """
-    Create non-overlapping distance classes for all unique pairs of data points.
+    Create non-overlapping distance classes from the dataset.
 
-    A distance class groups pairs of points whose distances are less than epsilon apart.
-    Each class is labeled starting from D1, D2, ..., Dm, where m is the number of classes.
-
-    Parameters:
-    - dataset (array_like): The dataset containing n-dimensional data points.
-    - epsilon (float, optional): The maximum distance difference to consider two distances similar.
+    Args:
+        dataset: The dataset containing n-dimensional data points.
+        epsilon: The maximum difference between distances to consider them similar.
 
     Returns:
-    - OrderedDict: An ordered dictionary where keys are class labels (D1, D2, ...) and
-      values are lists of point index pairs belonging to each distance class.
+        A tuple containing:
+          - An ordered dictionary mapping class labels (e.g., "D1", "D2", ...) to lists of (pair, distance) tuples.
+          - An ordered dictionary mapping class labels to lists of point index pairs.
+          - A list of arrays, each array containing the point index pairs for a distance class.
     """
 
     def euclidean_distance(p1, p2):
@@ -78,21 +77,21 @@ def build_clauses_cluster_tree_md(literals: Dict[str, int],
                                   ml_pairs: np.ndarray,
                                   distance_classes: List[np.ndarray]) -> WCNF:
     """
-    Constructs the clauses for the SAT solver based on the decision tree encoding. Now includes MAX SOLVER PROBLEM FOR FIXED HEIGHT 
+    Construct clustering clauses for the SAT solver using a fixed-depth tree encoding.
 
     Args:
-        literals (dict): A dictionary mapping literals to variable indices.
-        dataset (list): The dataset, a list of tuples representing data points.
-        branch_nodes (list): Indices of branching nodes.
-        leaf_nodes (list): Indices of leaf nodes.
-        num_features (int): Number of features in the dataset.
-        k_clusters: number of clusters, will need to turn this into a list for operations on each clause
-        cl_pairs (list): Cannot-link pairs.
-        ml_pairs (list): Must-link pairs.
-        distance_classes (list): list pairs in ecah distace classes  
+        literals: A dictionary mapping literal names to variable indices.
+        dataset: The dataset containing data points.
+        branch_nodes: Indices of branching nodes.
+        leaf_nodes: Indices of leaf nodes.
+        num_features: Number of features in the dataset.
+        k_clusters: The number of clusters.
+        cl_pairs: Cannot-link pairs.
+        ml_pairs: Must-link pairs.
+        distance_classes: List of arrays where each array contains point index pairs for a distance class.
 
     Returns:
-        wcnf: A wcnf object containing all the clauses, with hard clauses for the tree structure/clustering and soft clauses for maximization
+        A weighted CNF object encoding the clustering constraints, including both hard and soft clauses.
     """
     ##################################################  BASE TREE ENCODINGS ################################################
 
@@ -119,7 +118,13 @@ def build_clauses_cluster_tree_md(literals: Dict[str, int],
 
 def solve_wcnf_clustering(wcnf: WCNF) -> List[int]:
     """
-    Solve the weighted CNF problem and return the model if found.
+    Solve the weighted CNF clustering problem using a Partial MaxSAT solver.
+
+    Args:
+        wcnf: The weighted CNF object containing the clustering clauses.
+
+    Returns:
+        A list of literal indices representing the SAT model, or an empty list if no solution was found.
     """
     solver = RC2(wcnf)
     solution = solver.compute()
@@ -130,17 +135,17 @@ def assign_clusters_and_diameters(x_i_c_matrix: np.ndarray,
                                   dataset: np.ndarray,
                                   k_clusters: int) -> Tuple[Dict[int, List[int]], Dict[int, float]]:
     """
-    Assigns data points to clusters based on the unique patterns in the x_i_c_matrix
-    and calculates the maximum diameter for each cluster.
+    Assign clusters to data points based on the cluster assignment matrix and compute the maximum diameter for each cluster.
 
-    Parameters:
-    - x_i_c_matrix (np.ndarray): The matrix containing cluster assignments of data points.
-    - dataset (np.ndarray): The original dataset with the data points.
-    - k_clusters (int): The number of clusters.
+    Args:
+        x_i_c_matrix: A matrix representing cluster assignments for data points.
+        dataset: The original dataset with data points.
+        k_clusters: The total number of clusters.
 
     Returns:
-    - cluster_assignments (dict): A dictionary with keys as cluster IDs and values as lists of data points in each cluster.
-    - cluster_diameters (dict): A dictionary with keys as cluster IDs and values as the maximum diameter of each cluster.
+        A tuple containing:
+          - A dictionary mapping cluster IDs to lists of data point indices.
+          - A dictionary mapping cluster IDs to the maximum diameter (largest pairwise distance) within that cluster.
     """
     # Assign clusters based on unique patterns in the x_i_c_matrix
     unique_patterns = np.unique(x_i_c_matrix, axis=0)

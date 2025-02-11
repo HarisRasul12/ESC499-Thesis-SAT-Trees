@@ -30,21 +30,21 @@ def build_clauses_cluster_tree_md_ms_smart_pair(literals: Dict[str, int],
                                                 ml_pairs: np.ndarray,
                                                 distance_classes: List[np.ndarray]) -> WCNF:
     """
-    Constructs the clauses for the SAT solver based on the decision tree encoding. Now includes MAX SOLVER PROBLEM FOR FIXED HEIGHT 
+    Construct clustering clauses for the SAT solver that integrate smart pair constraints.
 
     Args:
-        literals (dict): A dictionary mapping literals to variable indices.
-        dataset (list): The dataset, a list of tuples representing data points.
-        branch_nodes (list): Indices of branching nodes.
-        leaf_nodes (list): Indices of leaf nodes.
-        num_features (int): Number of features in the dataset.
-        k_clusters: number of clusters, will need to turn this into a list for operations on each clause
-        cl_pairs (list): Cannot-link pairs.
-        ml_pairs (list): Must-link pairs.
-        distance_classes (list): list pairs in each distance classes  
+        literals: A dictionary mapping literal names to variable indices.
+        dataset: The dataset containing data points.
+        branch_nodes: List of indices for branching nodes.
+        leaf_nodes: List of indices for leaf nodes.
+        num_features: The number of features in the dataset.
+        k_clusters: The number of clusters.
+        cl_pairs: Array of cannot-link pairs.
+        ml_pairs: Array of must-link pairs.
+        distance_classes: List of arrays representing distance classes.
 
     Returns:
-        wcnf: A wcnf object containing all the clauses, with hard clauses for the tree structure/clustering and soft clauses for maximization bicriteria
+        A weighted CNF object containing clustering clauses that integrate smart pair constraints.
     """
     ##################################################  BASE TREE ENCODINGS ################################################
 
@@ -109,31 +109,21 @@ def min_split_clustering_problem_smart_pair(dataset: np.ndarray,
                                             cl_pairs: np.ndarray = np.array([]),
                                             ml_pairs: np.ndarray = np.array([])) -> tuple:
     """
-    Solves a clustering minimum split BICRITERIA problem by constructing a complete binary tree of a specified depth,
-    creating literals for a SAT solver, building clauses for the SAT problem, and then solving
-    the weighted CNF problem to determine the cluster assignments and the maximum diameter
-    of each cluster. USING THE SMART PAIR ALGORITM
+    Solve the clustering minimum split problem with smart pair constraints using a SAT solver.
 
     Args:
-        dataset (np.ndarray): The dataset containing n-dimensional data points.
-        features (np.ndarray): Array of feature names or indices.
-        k_clusters (int): The desired number of clusters to form.
-        depth (int): The depth of the complete binary tree for clustering.
-        epsilon (float, optional): The maximum distance difference to consider two distances as similar, defaults to 0.
-        cl_pairs (np.ndarray, optional): An array of data point pairs that cannot be in the same cluster (cannot-link constraints).
-        ml_pairs (np.ndarray, optional): An array of data point pairs that must be in the same cluster (must-link constraints).
+        dataset: The dataset containing n-dimensional data points.
+        features: An array of feature identifiers.
+        k_clusters: The desired number of clusters.
+        depth: The depth of the complete binary tree for clustering.
+        epsilon: The maximum distance difference to consider distances similar.
+        cl_pairs: Array of cannot-link pairs.
+        ml_pairs: Array of must-link pairs.
 
     Returns:
-    - cluster_assignments (dict): A dictionary with keys as cluster IDs and values as lists of data points in each cluster.
-    - cluster_diameters (dict): A dictionary with keys as cluster IDs and values as the maximum diameter of each cluster.
-
-    The function performs the following steps:
-    - Creates non-overlapping distance classes for all unique pairs of data points in the dataset.
-    - Constructs a complete binary tree for the given depth and assigns branching and leaf nodes.
-    - Generates literals required for the SAT solver based on the tree structure and dataset.
-    - Builds clauses for the SAT solver based on the decision tree encoding.
-    - Solves the weighted CNF problem to find a solution for the clustering.
-    - Assigns data points to clusters based on the solution and calculates the maximum diameter for each cluster.
+        A tuple containing:
+          - A dictionary mapping cluster IDs to lists of data point indices.
+          - A dictionary mapping cluster IDs to the maximum diameter of each cluster.
     """
     dataset_size = len(dataset)
     num_features = len(features)
