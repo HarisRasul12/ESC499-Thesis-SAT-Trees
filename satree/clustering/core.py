@@ -7,7 +7,7 @@ from satree.treemodder.builder import create_literals
 
 def create_literals_cluster_tree(branch_nodes: List[int],
                                  leaf_nodes: List[int],
-                                 feature_indices: List[Any],
+                                 feature_indices: np.ndarray,
                                  k_clusters: int,
                                  dataset_size: int,
                                  distance_classes: List[Any],
