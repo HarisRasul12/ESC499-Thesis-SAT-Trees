@@ -1,10 +1,3 @@
-"""
-=========== Module Description ===========
-
-Module for solving clustering problems using a complete binary tree and SAT solvers. This module contains functions
-to solve clustering problems using a complete binary tree and SAT solvers.
-"""
-
 from typing import List, Tuple, Dict
 from itertools import combinations
 from collections import OrderedDict
