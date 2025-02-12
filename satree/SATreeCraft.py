@@ -23,10 +23,12 @@ from satree.classification.min_depth_tree_categorical import build_clauses_categ
 from satree.classification.fixed_depth_tree_categorical import build_clauses_categorical_fixed
 from satree.classification.additional_constraints import add_oblivious_tree_constraints, min_support, build_clauses_fixed_tree_min_margin_constraint_add
 
-from satree.clustering.clustering_advanced import build_clauses_cluster_tree_md, create_distance_classes, solve_wcnf_clustering, assign_clusters_and_diameters
-from satree.clustering.clustering_minsplit import build_clauses_cluster_tree_md_ms, process_clustering_solution, \
-    build_clauses_cluster_tree_md_ms_smart_pair
-from satree.clustering.core import create_literals_cluster_tree, create_literal_matrices_modular
+from satree.clustering.solver import solve_wcnf_clustering, \
+    assign_clusters_and_diameters, process_clustering_solution
+from satree.clustering.distance_classes import create_distance_classes
+from satree.clustering.models import build_clauses_cluster_tree_md_ms, build_clauses_cluster_tree_md_ms_smart_pair, \
+    build_clauses_cluster_tree_md
+from satree.clustering.literals import create_literals_cluster_tree, create_literal_matrices_modular
 
 from satree.loandra_support.loandra import run_loandra_and_parse_results, transform_tree_from_loandra
 

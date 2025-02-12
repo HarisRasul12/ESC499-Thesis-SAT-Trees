@@ -1,12 +1,10 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 import numpy as np
 from pysat.formula import WCNF
 from scipy.spatial.distance import euclidean
 
-from satree.clustering.core import create_literal_matrices_modular
-from satree.clustering.clustering_advanced import solve_wcnf_clustering, assign_clusters_and_diameters
-from satree.clustering.clustering_clauses import construct_clustering_clauses, add_clustering_encodings, \
+from satree.clustering.sat_clauses import construct_clustering_clauses, add_clustering_encodings, \
     add_distance_class_clauses
 
 
@@ -45,55 +43,6 @@ def build_clauses_cluster_tree_md_ms(literals: Dict[str, int],
     wcnf = add_distance_class_clauses(wcnf, literals, k_clusters, distance_classes)
 
     return wcnf
-
-
-def process_clustering_solution(wcnf: WCNF,
-                                literals: Dict[str, int],
-                                dataset: np.ndarray,
-                                features: np.ndarray,
-                                k_clusters: int,
-                                branch_nodes: List[int],
-                                leaf_nodes: List[int],
-                                distance_classes: List[np.ndarray]) -> Tuple[
-    Dict[int, List[int]], Dict[int, float], List[int]]:
-    """
-    Solve the clustering SAT problem and process the solution to obtain cluster assignments and diameters.
-
-    Args:
-        wcnf: The weighted CNF object containing clustering clauses.
-        literals: A dictionary mapping literal names to variable indices.
-        dataset: The dataset containing data points.
-        features: An array of feature identifiers.
-        k_clusters: The total number of clusters.
-        branch_nodes: Indices of branching nodes.
-        leaf_nodes: Indices of leaf nodes.
-        distance_classes: List of arrays for each distance class.
-
-    Returns:
-        A tuple containing:
-          - A dictionary mapping cluster IDs to lists of data point indices.
-          - A dictionary mapping cluster IDs to the maximum diameter of each cluster.
-          - The SAT solver's solution as a list of literal indices.
-    """
-    solution = solve_wcnf_clustering(wcnf)
-
-    a_matrix, s_matrix, z_matrix, g_matrix, x_i_c_matrix, bw_m_vector, bw_p_vector = create_literal_matrices_modular(
-        literals=literals,
-        solution=solution,
-        dataset_size=len(dataset),
-        k_clusters=k_clusters,
-        branch_nodes=branch_nodes,
-        leaf_nodes=leaf_nodes,
-        num_features=len(features),
-        distance_classes=distance_classes,
-        bicriteria=True
-    )
-
-    cluster_assignments, cluster_diameters = assign_clusters_and_diameters(
-        x_i_c_matrix, dataset, k_clusters
-    )
-
-    return cluster_assignments, cluster_diameters, solution
 
 
 def build_clauses_cluster_tree_md_ms_smart_pair(literals: Dict[str, int],
@@ -173,5 +122,54 @@ def build_clauses_cluster_tree_md_ms_smart_pair(literals: Dict[str, int],
     wcnf = add_clustering_encodings(wcnf, literals, dataset, leaf_nodes, k_clusters, cl_pairs, ml_pairs,
                                     distance_classes)
     wcnf = add_distance_class_clauses(wcnf, literals, k_clusters, distance_classes)
+
+    return wcnf
+
+
+def build_clauses_cluster_tree_md(literals: Dict[str, int],
+                                  dataset: np.ndarray,
+                                  branch_nodes: List[int],
+                                  leaf_nodes: List[int],
+                                  num_features: int,
+                                  k_clusters: int,
+                                  cl_pairs: np.ndarray,
+                                  ml_pairs: np.ndarray,
+                                  distance_classes: List[np.ndarray]) -> WCNF:
+    """
+    Construct clustering clauses for the SAT solver using a fixed-depth tree encoding.
+
+    Args:
+        literals: A dictionary mapping literal names to variable indices.
+        dataset: The dataset containing data points.
+        branch_nodes: Indices of branching nodes.
+        leaf_nodes: Indices of leaf nodes.
+        num_features: Number of features in the dataset.
+        k_clusters: The number of clusters.
+        cl_pairs: Cannot-link pairs.
+        ml_pairs: Must-link pairs.
+        distance_classes: List of arrays where each array contains point index pairs for a distance class.
+
+    Returns:
+        A weighted CNF object encoding the clustering constraints, including both hard and soft clauses.
+    """
+    ##################################################  BASE TREE ENCODINGS ################################################
+
+    # Now the problem has become Partial MaxSAT - we will assign weights to the soft clauses Eq. (13). Eq(1-10,12) HARD clauses
+    wcnf = construct_clustering_clauses(literals, dataset, branch_nodes, leaf_nodes, num_features)
+    wcnf = add_clustering_encodings(wcnf, literals, dataset, leaf_nodes, k_clusters, cl_pairs, ml_pairs,
+                                    distance_classes)
+
+    # Clause 32: Ensures that if bw^-_w is true, then the points in distance class w
+    # cannot be clustered with the points in distance class w-1 if bw^-_(w-1) is false.
+    for w in range(1, len(distance_classes)):  # Starting from 1 since we're checking w against w-1
+        # print('clause 32: ', [-literals[f'bw_m_{w}'], literals[f'bw_m_{w-1}']])
+        wcnf.append([-literals[f'bw_m_{w}'], literals[f'bw_m_{w - 1}']])
+
+    # Clause 37: For each distance class w, we add a soft clause for the corresponding b^-_w literal
+    # to encourage points within that class to be clustered separately
+    # Max diameter solve problem
+    for w in range(len(distance_classes)):
+        # print("clause 37: ", [-literals[f'bw_m_{w}']])
+        wcnf.append([-literals[f'bw_m_{w}']], weight=1)
 
     return wcnf
