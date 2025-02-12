@@ -34,8 +34,8 @@ from typing import List, Dict, Any, Tuple, Union
 import numpy as np
 from pysat.formula import CNF
 
-from satree.classification.core import compute_numerical_threshold
-from satree.classification.min_depth_tree import solve_cnf, visualize_tree
+from satree.classification.common_ops import compute_numerical_threshold
+from satree.classification.min_depth import solve_cnf, visualize_tree
 from satree.treemodder.builder import build_complete_tree, create_literals
 from satree.classification.sat_clauses import add_clauses_for_features_and_paths
 from satree.common_sat_clauses import add_feature_selection_clauses_for_branching_nodes
@@ -51,7 +51,10 @@ def build_clauses_categorical(literals: Dict[str, int],
                               labels: List[Any],
                               true_labels: List[Any]) -> CNF:
     """
-    Constructs the clauses for the SAT solver based on the decision tree encoding.
+    Constructs a CNF encoding for decision trees in the context of categorical classification.
+
+    This encoding integrates constraints for both categorical and numerical features, leveraging direct branching
+    (without one-hot encoding) for categorical data as outlined in the power set branching extension of the paper.
 
     Args:
         literals: A dictionary mapping literals to variable indices.

@@ -34,9 +34,9 @@ from typing import List, Dict, Any, Tuple, Union
 import numpy as np
 from pysat.formula import WCNF
 
-from satree.classification.min_depth_tree_categorical import add_thresholds_categorical
-from satree.classification.fixed_depth_tree import solve_wcnf
-from satree.classification.min_depth_tree import visualize_tree
+from satree.classification.min_depth_categorical import add_thresholds_categorical
+from satree.classification.fixed_depth import solve_wcnf
+from satree.classification.min_depth import visualize_tree
 from satree.treemodder.builder import build_complete_tree, create_literals
 from satree.classification.sat_clauses import add_clauses_for_features_and_paths, add_classification_clauses
 from satree.common_sat_clauses import add_feature_selection_clauses_for_branching_nodes
@@ -52,7 +52,11 @@ def build_clauses_categorical_fixed(literals: Dict[str, int],
                                     labels: List[Any],
                                     true_labels: List[Any]) -> WCNF:
     """
-    Constructs the clauses for the SAT solver based on the decision tree encoding.
+    Generates SAT clauses for fixed-depth decision trees that handle both categorical and numerical features.
+
+    This function extends the core encoding by incorporating constraints specific to categorical features—
+    including grouping indices by category—to support direct branching without binary expansion. It aligns with
+    the power set branching extension discussed in Section 4 of the paper.
 
     Args:
         literals: A dictionary mapping literals to variable indices.

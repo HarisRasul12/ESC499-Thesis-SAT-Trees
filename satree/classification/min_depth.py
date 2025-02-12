@@ -39,7 +39,7 @@ from graphviz import Digraph
 from pysat.formula import CNF
 from pysat.solvers import Solver
 
-from satree.classification.core import compute_numerical_threshold
+from satree.classification.common_ops import compute_numerical_threshold
 from satree.treemodder.builder import build_complete_tree, create_literals
 from satree.classification.sat_clauses import construct_maxsat_clauses
 from satree.common_sat_clauses import add_redundant_constraints
@@ -53,7 +53,11 @@ def build_clauses(literals: Dict[str, int],
                   labels: List[Any],
                   true_labels: List[Any]) -> CNF:
     """
-    Constructs the clauses for the SAT solver based on the decision tree encoding.
+    Constructs a CNF encoding for the min-depth optimal decision tree problem.
+
+    The formulation includes clauses for feature selection, ensuring valid data routing through the tree, and
+    enforcing that each leaf node’s assigned label matches the training data. This encoding mirrors the rules
+    set out in Sections 3.1 and 3.2 of the paper.
 
     Args:
         literals: A dictionary mapping literals to variable indices.
@@ -87,8 +91,11 @@ def set_branch_node_features(model: List[int],
                              tree_structure: List[Dict[str, Any]],
                              features: List[str]) -> None:
     """
-    Set the chosen feature and threshold for each branching node in the tree structure
-    based on the given SAT model.
+    Decodes the SAT solution to determine the selected feature at each branching node.
+
+    By inspecting which feature selection literal is set to true in the SAT model, the function updates the tree
+    structure accordingly. This decoding directly implements the mapping from SAT variables to decision tree splits
+    as described in the paper.
 
     Args:
         model: The model returned by the SAT solver.
@@ -122,9 +129,10 @@ def solve_cnf(cnf: CNF,
               labels: List[Any],
               features: List[str]) -> Union[List[int], str]:
     """
-    Attempts to solve the given CNF using a SAT solver.
+    Attempts to solve the CNF encoding of the decision tree using a SAT solver.
 
-    If a solution is found, it updates the tree structure with the correct labels for leaf nodes.
+    If a satisfying assignment is found, the function decodes the model to update leaf node labels and branching
+    decisions, effectively realizing the SAT decoding step in the mathematical framework.
 
     Args:
         cnf: The CNF object containing all clauses for the SAT solver.
@@ -160,8 +168,11 @@ def add_thresholds(tree_structure: List[Dict[str, Any]],
                    model_solution: List[int],
                    dataset: np.ndarray) -> List[Dict[str, Any]]:
     """
-    Compute the threshold for each branching node in the tree structure
-    based on the entire dataset.
+    Computes and assigns numerical thresholds to branching nodes based on the SAT model solution.
+
+    For each branching node, the threshold is determined by locating the transition in literal values over the
+    sorted feature order and averaging the corresponding feature values. This mirrors the threshold decoding
+    procedure outlined in the paper.
 
     Args:
         tree_structure: The binary tree structure containing nodes.
@@ -223,10 +234,11 @@ def add_nodes(dot: Digraph,
 
 def visualize_tree(tree_structure: List[Dict[str, Any]]) -> Digraph:
     """
-    Visualizes the given tree structure using Graphviz.
+    Creates a Graphviz Digraph visualization of the decision tree structure.
 
-    This function creates a Graphviz Digraph, adds all the nodes and edges based on the tree structure,
-    and returns the resulting Digraph object for rendering or further manipulation.
+    By leveraging a recursive node addition process, this function produces a diagram that clearly displays branching
+    nodes (with their features and thresholds) and leaf nodes (with assigned class labels), thus bridging the gap
+    between the SAT encoding and an interpretable decision model.
 
     Args:
         tree_structure: The complete tree structure (list of nodes) to be visualized.

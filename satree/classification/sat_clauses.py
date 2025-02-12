@@ -19,7 +19,7 @@ from typing import List, Dict, Any, Union
 import numpy as np
 from pysat.formula import CNF, WCNF
 
-from satree.classification.core import compute_ordering_with_categorical
+from satree.classification.common_ops import compute_ordering_with_categorical
 from satree.common_sat_clauses import construct_feature_selection_clauses, append_direction_clauses, \
     add_path_validity_and_deviation_clauses
 
@@ -32,7 +32,11 @@ def construct_maxsat_clauses(wcnf: Union[WCNF, CNF],  # Use WCNF or CNF as appro
                              num_features: int,
                              labels: List[Any]) -> WCNF:
     """
-    Constructs the clauses for the SAT solver based on the decision tree encoding.
+    Constructs the core set of SAT/MaxSAT clauses encoding the decision tree structure.
+
+    This includes enforcing that exactly one feature is chosen per branching node (per Equations (1) and (2))
+    and that each leaf is assigned a unique label (Equation (8)). These clauses form the backbone of the SAT
+    formulation used for both optimal tree problems.
 
     Args:
         wcnf: The WCNF object to which the clauses will be added.
@@ -64,9 +68,10 @@ def add_classification_clauses(wcnf: WCNF,
                                leaf_nodes: List[int],
                                true_labels: List[Any]) -> WCNF:
     """
-    Adds classification clauses to the WCNF object.
+    Augments the WCNF with clauses to ensure data points are classified correctly.
 
-    This function adds hard clauses to ensure that a data point ends up in a leaf node with the correct label,
+    It links the routing of each data point to the label assigned at the corresponding leaf node (via hard clauses)
+    and introduces soft clauses that reward correct classifications, in line with Equations (12) and (13) from the paper.
     and soft clauses to maximize the number of correctly classified data points.
 
     Args:
@@ -103,10 +108,11 @@ def add_clauses_for_features_and_paths(cnf: Union[WCNF, CNF],  # Use WCNF or CNF
                                        features_numerical: List[str],
                                        labels: List[Any]) -> Union[WCNF, CNF]:
     """
-    Adds clauses for feature selection, path validity, and label assignment to the CNF object.
+    Adds additional SAT clauses that enforce proper feature selection and valid data routing paths.
 
-    This function adds clauses to ensure proper feature selection, path validity from right and left traversal,
-    deviations for data points not ending in leaf nodes, and label assignment for leaf nodes.
+    By using the ordering of data points (via compute_ordering_with_categorical), it adds constraints that ensure
+    consistency in the left/right routing at branching nodes and uniquely assigns labels at leaves, reflecting the
+    SAT formulation details from Equations (3), (4), and (22)-(24) in the paper.
 
     Args:
         cnf: The CNF object to which the clauses will be added.
@@ -160,5 +166,3 @@ def add_clauses_for_features_and_paths(cnf: Union[WCNF, CNF],  # Use WCNF or CNF
                 cnf.append([-literals[f'a_{t}_{j}'], -literals[f's_{ordering[-1]}_{t}']])
 
     return cnf
-
-

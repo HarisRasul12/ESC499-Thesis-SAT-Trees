@@ -39,7 +39,7 @@ from pysat.examples.rc2 import RC2
 from satree.treemodder.builder import build_complete_tree, create_literals
 
 from satree.common_sat_clauses import add_redundant_constraints
-from satree.classification.min_depth_tree import set_branch_node_features, add_thresholds, visualize_tree
+from satree.classification.min_depth import set_branch_node_features, add_thresholds, visualize_tree
 from satree.classification.sat_clauses import construct_maxsat_clauses, add_classification_clauses
 
 

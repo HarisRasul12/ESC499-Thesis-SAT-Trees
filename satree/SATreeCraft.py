@@ -17,11 +17,11 @@ from pysat.formula import WCNF
 
 from satree.treemodder.builder import build_complete_tree, create_literals
 
-from satree.classification.min_depth_tree import build_clauses, add_thresholds, solve_cnf, visualize_tree
-from satree.classification.fixed_depth_tree import build_clauses_fixed_tree, solve_wcnf
-from satree.classification.min_depth_tree_categorical import build_clauses_categorical, add_thresholds_categorical
-from satree.classification.fixed_depth_tree_categorical import build_clauses_categorical_fixed
-from satree.classification.additional_constraints import add_oblivious_tree_constraints, min_support, build_clauses_fixed_tree_min_margin_constraint_add
+from satree.classification.min_depth import build_clauses, add_thresholds, solve_cnf, visualize_tree
+from satree.classification.fixed_depth import build_clauses_fixed_tree, solve_wcnf
+from satree.classification.min_depth_categorical import build_clauses_categorical, add_thresholds_categorical
+from satree.classification.fixed_depth_categorical import build_clauses_categorical_fixed
+from satree.classification.constraints import add_oblivious_tree_constraints, min_support, build_clauses_fixed_tree_min_margin_constraint_add
 
 from satree.clustering.solver import solve_wcnf_clustering, \
     assign_clusters_and_diameters, process_clustering_solution
