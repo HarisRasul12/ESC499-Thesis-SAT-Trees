@@ -10,7 +10,9 @@ from satree.clustering.literals import create_literal_matrices_modular
 
 def solve_wcnf_clustering(wcnf: WCNF) -> List[int]:
     """
-    Solve the weighted CNF clustering problem using a Partial MaxSAT solver.
+    Solves the weighted CNF clustering formulation using a Partial MaxSAT solver. The solution—a list of literal
+    assignments—represents an optimized assignment that satisfies the hard constraints (e.g., tree validity, pairwise
+    constraints) while optimizing the soft clustering objectives (e.g., intra-cluster compactness).
 
     Args:
         wcnf: The weighted CNF object containing the clustering clauses.
@@ -27,7 +29,9 @@ def assign_clusters_and_diameters(x_i_c_matrix: np.ndarray,
                                   dataset: np.ndarray,
                                   k_clusters: int) -> Tuple[Dict[int, List[int]], Dict[int, float]]:
     """
-    Assign clusters to data points based on the cluster assignment matrix and compute the maximum diameter for each cluster.
+    Interprets the cluster assignment matrix obtained from the SAT solution to assign each data point to a cluster
+    and computes the maximum diameter (largest pairwise distance) within each cluster. This post-processing step translates
+    the SAT model into actionable clustering results, quantifying both the grouping and quality (via diameter) of each cluster.
 
     Args:
         x_i_c_matrix: A matrix representing cluster assignments for data points.
@@ -72,7 +76,10 @@ def process_clustering_solution(wcnf: WCNF,
                                 distance_classes: List[np.ndarray]) -> Tuple[
     Dict[int, List[int]], Dict[int, float], List[int]]:
     """
-    Solve the clustering SAT problem and process the solution to obtain cluster assignments and diameters.
+    Integrates the entire SAT-based clustering pipeline: it solves the weighted CNF formulation, decodes the solution
+    into modular literal matrices (including cluster assignment and distance class indicators), and then interprets these
+    matrices to derive final cluster assignments and compute cluster diameters. This function encapsulates the end-to-end
+    process of translating the SAT model into a clustering outcome as defined by the mathematical formulation.
 
     Args:
         wcnf: The weighted CNF object containing clustering clauses.

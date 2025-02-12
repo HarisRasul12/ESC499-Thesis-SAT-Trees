@@ -13,7 +13,13 @@ def create_literals_cluster_tree(branch_nodes: List[int],
                                  distance_classes: List[Any],
                                  bicriteria: bool = False) -> Dict[str, int]:
     """
-    Create SAT literals based on the tree structure and dataset size for clustering.
+    Generates SAT literals for the clustering encoding by extending the tree-based literal creation with additional
+    variables dedicated to cluster assignments and distance-based constraints. In particular, it creates:
+      – 'x' literals that encode the ordering of cluster assignments for each data point,
+      – 'bw_m' literals to indicate that points within a given distance class should not be clustered together, and
+      – optionally, 'bw_p' literals for encouraging co-clustering when bicriteria objectives are considered.
+    These additional variables enable the SAT formulation to capture both the hard structural constraints and the
+    soft distance-driven preferences central to the clustering mathematics.
 
     Args:
         branch_nodes: List of indices for branching nodes.
@@ -64,7 +70,12 @@ def create_literal_matrices_modular(literals: Dict[str, int],
     Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
 ]:
     """
-    Construct matrices representing the truth assignment of SAT literals for clustering.
+    Decodes the SAT solution into structured matrices (and vectors) representing truth assignments for the various
+    literal groups used in the clustering SAT encoding. The resulting matrices capture:
+      – the assignment of features (and thus the tree structure) via 'a', 's', 'z', and 'g' matrices,
+      – the cluster assignment ordering through the 'x' matrix, and
+      – the activation of distance-based constraints via the 'bw_m' (and optionally 'bw_p') vectors.
+    This transformation is essential for bridging the SAT model to an interpretable clustering outcome.
 
     Args:
         literals: A dictionary mapping literal names to variable indices.

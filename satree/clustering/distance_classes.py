@@ -9,7 +9,11 @@ def create_distance_classes(dataset: np.ndarray,
                             epsilon: float = 0) -> Tuple[
     OrderedDict[str, List[Tuple[Tuple[int, int], float]]], OrderedDict[str, List[Tuple[int, int]]], List[np.ndarray]]:
     """
-    Create non-overlapping distance classes from the dataset.
+    Constructs non-overlapping distance classes by grouping all pairs of data points whose Euclidean distances
+    differ by no more than a given epsilon. This grouping creates ordered classes (labeled “D1”, “D2”, …) that
+    serve as the foundation for enforcing clustering constraints: pairs in the same class are assumed to be
+    similarly “close” (or “far”) and are later used to condition SAT clauses that encourage either co-clustering
+    or separation, as dictated by the clustering objective.
 
     Args:
         dataset: The dataset containing n-dimensional data points.

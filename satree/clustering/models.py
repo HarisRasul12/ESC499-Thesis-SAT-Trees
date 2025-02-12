@@ -18,7 +18,12 @@ def build_clauses_cluster_tree_md_ms(literals: Dict[str, int],
                                      ml_pairs: np.ndarray,
                                      distance_classes: List[np.ndarray]) -> WCNF:
     """
-    Construct clustering clauses for the SAT solver using a fixed-depth tree encoding with minimum split criteria.
+    Constructs the weighted CNF encoding for a clustering problem based on a fixed-depth tree structure and a
+    minimum split criterion. It integrates the base tree encoding with additional clustering constraints that incorporate:
+      – must-link and cannot-link pairs (reflecting pairwise clustering relationships), and
+      – distance class constraints to enforce soft penalties based on intra-class distances.
+    This formulation transforms the clustering objective into a partial MaxSAT problem where the soft clauses drive the
+    optimization of cluster cohesion and separation.
 
     Args:
         literals: A dictionary mapping literal names to variable indices.
@@ -55,7 +60,11 @@ def build_clauses_cluster_tree_md_ms_smart_pair(literals: Dict[str, int],
                                                 ml_pairs: np.ndarray,
                                                 distance_classes: List[np.ndarray]) -> WCNF:
     """
-    Construct clustering clauses for the SAT solver that integrate smart pair constraints.
+    Constructs an enhanced SAT encoding for clustering that incorporates “smart pair” constraints. In this variant,
+    must-link and cannot-link pairs are pre-sorted based on Euclidean distance so that the SAT clauses can be added
+    conditionally—ensuring that pairs with closer proximity are preferentially forced into the same cluster and
+    those farther apart are separated. Additionally, distance class clauses are integrated to conditionally require
+    co-clustering or separation, thus refining the optimization landscape as defined by the clustering mathematics.
 
     Args:
         literals: A dictionary mapping literal names to variable indices.
@@ -136,7 +145,11 @@ def build_clauses_cluster_tree_md(literals: Dict[str, int],
                                   ml_pairs: np.ndarray,
                                   distance_classes: List[np.ndarray]) -> WCNF:
     """
-    Construct clustering clauses for the SAT solver using a fixed-depth tree encoding.
+    Constructs a SAT encoding for clustering using a fixed-depth tree without the enhanced split criteria. This
+    function merges the base tree encoding with clustering-specific constraints, including those that enforce
+    non-empty clusters and proper separation via distance class constraints. The generated CNF reflects a set of
+    both hard and soft clauses that directly correspond to the clustering optimization problem—balancing cohesion
+    (by grouping close points) and separation (by penalizing clusters that merge distant points).
 
     Args:
         literals: A dictionary mapping literal names to variable indices.

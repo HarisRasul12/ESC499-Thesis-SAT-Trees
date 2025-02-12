@@ -12,7 +12,9 @@ def construct_clustering_clauses(literals: Dict[str, int],
                                  leaf_nodes: List[int],
                                  num_features: int) -> WCNF:
     """
-    Construct clustering clauses for the decision tree SAT encoding.
+    Builds the initial set of SAT clauses for the clustering problem by adapting the tree-based feature selection
+    and redundant constraints from decision tree encoding to the clustering context. This foundational encoding
+    guarantees a valid tree structure while providing a framework upon which clustering-specific clauses can be added.
 
     Args:
         literals: A dictionary mapping literal names to variable indices.
@@ -40,7 +42,11 @@ def add_clustering_encodings(wcnf: WCNF,
                              ml_pairs: np.ndarray,
                              distance_classes: List[np.ndarray]) -> WCNF:
     """
-    Add additional clustering encoding clauses to the weighted CNF object.
+    Augments the base SAT encoding with additional clauses that enforce clustering properties. These include unary
+    ordering of cluster labels at leaves, constraints linking data point routing to cluster assignments, and clauses
+    that integrate must-link and cannot-link conditions. This expanded encoding is designed to ensure that the SAT
+    solution aligns with the mathematical objectives of clustering—maximizing intra-cluster similarity while enforcing
+    inter-cluster separation.
 
     Args:
         wcnf: The weighted CNF object to update.
@@ -145,7 +151,12 @@ def add_distance_class_clauses(wcnf: WCNF,
                                k_clusters: int,
                                distance_classes: List[np.ndarray]) -> WCNF:
     """
-    Add distance class constraints to the weighted CNF object.
+    Integrates distance class constraints into the SAT formulation by adding clauses that condition the clustering
+    decisions on the pairwise distance groupings. These clauses ensure that, for each distance class, either:
+      – data points are forced to be clustered together if the corresponding “bw_p” indicator is true, or
+      – separated if the “bw_m” indicator is active.
+    Soft clauses are also added to encourage desirable clustering outcomes (e.g., minimizing cluster diameter),
+    reflecting the balance between cohesion and separation central to the mathematical model.
 
     Args:
         wcnf: The weighted CNF object to update.
