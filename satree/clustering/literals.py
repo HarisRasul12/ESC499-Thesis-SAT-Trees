@@ -1,3 +1,17 @@
+"""
+=========== Module Description ===========
+
+This module extends the standard tree-based SAT literal generation to accommodate clustering objectives.
+It provides functions that create additional SAT variables specifically tailored for the clustering encoding.
+In particular, it generates:
+  • 'x' literals to encode the ordering of cluster assignments for each data point,
+  • 'bw_m' literals that indicate when points within a given distance class should not be clustered together, and
+  • optionally, 'bw_p' literals that encourage co-clustering for bicriteria formulations.
+By integrating these variables with the base tree encoding, the module captures both the hard structural
+constraints of the decision tree and the soft, distance-driven preferences central to the clustering
+mathematical model.
+"""
+
 from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np

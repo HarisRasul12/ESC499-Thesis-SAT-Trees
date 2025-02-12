@@ -1,3 +1,15 @@
+"""
+=========== Module Description ===========
+
+This module provides functions to derive distance classes from a given dataset by computing pairwise
+Euclidean distances between data points. It groups pairs of points into ordered classes (labeled “D1”, “D2”, …)
+such that any two distances in the same class differ by at most a specified tolerance (epsilon). These
+distance classes serve as a crucial mathematical foundation in the SAT encoding for clustering: they enable
+the formulation of constraints that either encourage data points with similar pairwise distances to be clustered
+together or enforce their separation. The resulting ordered grouping is later integrated into the SAT model as
+soft constraints to optimize intra-cluster cohesion and inter-cluster separation.
+"""
+
 from collections import OrderedDict
 from itertools import combinations
 from typing import Tuple, List

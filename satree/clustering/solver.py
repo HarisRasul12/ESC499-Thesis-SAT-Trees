@@ -1,3 +1,17 @@
+"""
+=========== Module Description ===========
+
+This module provides the end-to-end SAT solving and post-processing pipeline for the clustering problem.
+It employs a Partial MaxSAT solver (RC2) to find an assignment that satisfies the weighted CNF formulation
+constructed from the clustering constraints. After solving, the module decodes the SAT solution into structured
+literal matrices that represent cluster assignments and distance class indicators. It then interprets these matrices
+to:
+  • Assign data points to clusters based on unique patterns in the cluster assignment matrix,
+  • Compute key clustering metrics such as the maximum diameter within each cluster.
+This process bridges the abstract SAT encoding with practical clustering outcomes, ensuring that the solution
+aligns with the optimization objectives of achieving cohesive, well-separated clusters as outlined in the mathematical model.
+"""
+
 from typing import List, Tuple, Dict
 
 import numpy as np

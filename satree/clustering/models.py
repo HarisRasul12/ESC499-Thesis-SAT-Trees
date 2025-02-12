@@ -1,3 +1,18 @@
+"""
+=========== Module Description ===========
+
+This module implements the SAT-based encoding for clustering problems using fixed-depth tree structures.
+It constructs weighted CNF formulations that integrate the base tree encoding with clustering-specific constraints,
+including:
+  • Must-link and cannot-link constraints that capture pairwise clustering relationships,
+  • Distance class constraints derived from the computed distance classes to enforce soft penalties based on
+    intra-cluster distances.
+The encoding transforms the clustering objective into a partial MaxSAT problem where soft clauses are used to
+balance cluster cohesion (by grouping close points) and separation (by penalizing clusters that merge distant points).
+Multiple encoding variants are provided, including an enhanced version that incorporates “smart pair” constraints
+to further refine clustering performance.
+"""
+
 from typing import Dict, List
 
 import numpy as np

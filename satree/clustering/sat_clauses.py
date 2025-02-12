@@ -1,3 +1,17 @@
+"""
+=========== Module Description ===========
+
+This module defines the core SAT clauses for the clustering problem within the tree-based encoding framework.
+It adapts the standard decision tree SAT encoding to incorporate clustering objectives by adding clauses that:
+  • Unary encode cluster labels at each leaf,
+  • Link data point routing decisions with cluster assignments using 'g' and 'x' literals,
+  • Enforce must-link and cannot-link relationships between data points, and
+  • Integrate distance class constraints via special literals ('bw_m' and 'bw_p') that conditionally enforce
+    either co-clustering or separation based on pairwise distances.
+These clauses directly translate the mathematical formulation—aiming to maximize intra-cluster similarity
+while ensuring inter-cluster separation—into a SAT (or partial MaxSAT) model.
+"""
+
 from typing import Dict, List
 
 import numpy as np
