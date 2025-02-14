@@ -1,3 +1,18 @@
+"""
+=========== Module Description ===========
+
+This module provides essential utilities for manipulating binary tree structures within the SATree framework. It focuses
+on extracting structural properties from a binary tree represented implicitly as an array. In particular, the module
+offers functionality to compute the ancestors of a given node on a specified side (left or right), which is pivotal
+for enforcing path-based constraints in the SAT encoding of decision trees.
+
+Mathematically, the tree is modeled as a complete binary tree where each node’s parent is computed as (i - 1) // 2.
+This representation supports the construction of SAT clauses that ensure data points follow a valid path from the
+root to a leaf node. By selectively retrieving ancestors based on whether the node is a left or right child, the module
+aids in defining routing constraints and maintaining consistency in the decision-making process modeled by
+the SAT formulation.
+"""
+
 from typing import List
 
 
