@@ -1,20 +1,32 @@
 """
 =========== Module Description ===========
 
-Module to convert datasets into proper formats for inputting into tree creation. This module includes data loaders and
-preprocessing utilities using sklearn frameworks to prepare datasets for tree-based methods.
+This module converts datasets into proper formats for inputting into tree creation. It includes data loaders
+and preprocessing utilities that leverage scikit-learn and pandas frameworks to prepare datasets for tree-based
+methods. Specifically, the module provides classes for loading and preprocessing:
+  - Binary numerical datasets (via TreeDataLoaderBinaryNumerical), and
+  - Datasets with categorical features (via TreeDataLoaderWithCategorical).
+
+Both classes handle file reading (from CSV, Excel, or text files), custom column exclusion, and label encoding.
+Additionally, the module offers a k-fold cross-validation utility (k_fold_tester) to evaluate SAT-based decision tree
+classifiers using the processed datasets.
+
+To do handle xlsx files, csv files, label on first index, label on last index - give in the extensions do
+the processing return the object type with all the stuff
 """
+
+import os
+from typing import Optional, List, Tuple
 
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import KFold
 from sklearn.preprocessing import LabelEncoder
-import os
+
 from satree.SATreeClassifier import SATreeClassifier
 from satree.SATreeCraft import SATreeCraft
 
-from sklearn.model_selection import KFold
 
-#To do handle xlsx files, csv files, label on first index, label on last index - give in the exetnesions do the proessing return the object type with all the stuff
 class TreeDataLoaderBinaryNumerical:
     """
     A class to represent a dataset with labeled data for numerical and binary data only for features
@@ -41,7 +53,21 @@ class TreeDataLoaderBinaryNumerical:
         my_dataset.true_labels_for_points
         my_dataset.dataset
     """
-    def __init__(self, file_path, delimiter=None, label_position=-1, custom_exclude=None):
+
+    def __init__(self,
+                 file_path: str,
+                 delimiter: Optional[str] = None,
+                 label_position: int = -1,
+                 custom_exclude: Optional[List[int]] = None) -> None:
+        """
+        Initializes a data loader for binary numerical datasets.
+
+        Args:
+            file_path: Path to the dataset file.
+            delimiter: Delimiter used in the dataset file (default is ',').
+            label_position: Index of the label column (default is -1, i.e., last column).
+            custom_exclude: Optional list of column indices to exclude.
+        """
         self.file_path = file_path
         self.delimiter = delimiter or ','
         self.label_position = label_position
@@ -53,7 +79,10 @@ class TreeDataLoaderBinaryNumerical:
         self.label_encoder = LabelEncoder()
         self.process_data_into_tree_form()
 
-    def process_data_into_tree_form(self):
+    def process_data_into_tree_form(self) -> None:
+        """
+        Reads and processes the dataset file, converting it into a format suitable for tree-based methods.
+        """
         file_extension = os.path.splitext(self.file_path)[1].lower()
 
         if file_extension in ['.csv', '.xls', '.xlsx']:
@@ -61,7 +90,10 @@ class TreeDataLoaderBinaryNumerical:
         else:
             self._process_text_file()
 
-    def _process_csv_or_excel(self):
+    def _process_csv_or_excel(self) -> None:
+        """
+        Processes CSV or Excel files by reading the data, excluding custom columns, and splitting features and labels.
+        """
         if self.file_path.endswith('.csv'):
             df = pd.read_csv(self.file_path)
         else:  # Excel file
@@ -81,13 +113,16 @@ class TreeDataLoaderBinaryNumerical:
 
         self._finalize_data(features_array, labels_array)
 
-    def _process_text_file(self):
+    def _process_text_file(self) -> None:
+        """
+        Processes a text file by reading each line, splitting by the delimiter, and converting feature values to floats.
+        """
         features_list = []
         raw_labels_list = []
         with open(self.file_path, 'r') as file:
             for line in file:
                 components = line.strip().split(self.delimiter)
-                
+
                 # Extract label based on the label_position after excluding custom columns
                 label = components.pop(self.label_position) if self.label_position is not None else components.pop(-1)
                 raw_labels_list.append(label)
@@ -105,14 +140,18 @@ class TreeDataLoaderBinaryNumerical:
 
                 features_list.append(features)
 
-        self._finalize_data(np.array(features_list), raw_labels_list)
+        self._finalize_data(np.array(features_list), np.array(raw_labels_list))
 
-    def _finalize_data(self, features_array, labels_array):
+    def _finalize_data(self, features_array: np.ndarray, labels_array: np.ndarray) -> None:
+        """
+        Finalizes the data processing by encoding labels, generating feature names, and storing the processed dataset.
+        """
         # Encode labels to numeric values
         self.true_labels_for_points = self.label_encoder.fit_transform(labels_array)
         self.dataset = features_array
         self.features = np.array([str(i) for i in range(self.dataset.shape[1])])
         self.labels = np.unique(self.true_labels_for_points)
+
 
 class TreeDataLoaderWithCategorical:
     """
@@ -122,18 +161,17 @@ class TreeDataLoaderWithCategorical:
     numerical labels, while also handling rows with missing values.
 
     Attributes:
-        file_path (str): The file path to the dataset.
-        label_index (int): The index of the column containing the labels.
-        numerical_indices (list of int): The indices of columns that contain numerical data.
-        categorical_string_index (int or None): The index where a single string of categorical 
-                                                 features is located, if applicable.
-        delimiter (str): The delimiter used in the text file to separate data columns.
-        dataset (np.ndarray): The array containing the processed features for each data point.
-        features_categorical (np.ndarray): The array containing the processed categorical features.
-        features_numerical (np.ndarray): The array containing the processed numerical features.
-        true_labels_for_points (np.ndarray): The array containing the processed labels for each data point.
-        labels (np.ndarray): The array containing the unique labels present in the dataset.
-        features (np.ndarray): The array containing the names of the features.
+        file_path: The file path to the dataset.
+        label_index: The index of the column containing the labels.
+        numerical_indices: The indices of columns that contain numerical data.
+        categorical_feature_index: The index of the column containing a string of categorical features.
+        delimiter: The delimiter used in the text file to separate data columns.
+        dataset: The array containing the processed features for each data point.
+        features_categorical: The array containing the processed categorical features.
+        features_numerical: The array containing the processed numerical features.
+        true_labels_for_points: The array containing the processed labels for each data point.
+        labels: The array containing the unique labels present in the dataset.
+        features: The array containing the names of the features.
 
     Methods:
         process_data(): Main method to load and process the data from the file path.
@@ -155,7 +193,23 @@ class TreeDataLoaderWithCategorical:
         data_loader.labels
         data_loader.features
     """
-    def __init__(self, file_path, label_index, numerical_indices=None, categorical_feature_index=None, delimiter=','):
+
+    def __init__(self,
+                 file_path: str,
+                 label_index: int,
+                 numerical_indices: Optional[List[int]] = None,
+                 categorical_feature_index: Optional[int] = None,
+                 delimiter: str = ',') -> None:
+        """
+        Initializes a data loader for datasets containing both categorical and numerical features.
+
+        Args:
+            file_path: Path to the dataset file.
+            label_index: Index of the column containing labels.
+            numerical_indices: Optional list of indices for numerical columns.
+            categorical_feature_index: Optional index of the column containing a string of categorical features.
+            delimiter: Delimiter used in the file (default is ',').
+        """
         self.file_path = file_path
         self.label_index = label_index
         self.numerical_indices = numerical_indices
@@ -169,15 +223,17 @@ class TreeDataLoaderWithCategorical:
         self.dataset = None
         self.label_encoder = LabelEncoder()
         self.process_data()
-    
 
-    def process_data(self):
+    def process_data(self) -> None:
+        """
+        Loads and processes the dataset from a text file, handling both categorical and numerical features,
+        performing label encoding, and managing missing values.
+        """
 
-        
-        if self.categorical_feature_index != None:
+        if self.categorical_feature_index is not None:
             with open(self.file_path, 'r') as file:
                 raw_data = [line.strip().split(self.delimiter) for line in file if '?' not in line]
-            
+
             # Extract labels and encode them
             labels = [row[self.label_index] for row in raw_data]
             self.true_labels_for_points = self.label_encoder.fit_transform(labels)
@@ -189,14 +245,13 @@ class TreeDataLoaderWithCategorical:
                 features = [list(row[self.categorical_feature_index].strip()) for row in raw_data]
             else:
                 # Treat each comma-separated value as a separate feature, excluding the label
-                features = [row[:self.label_index] + row[self.label_index+1:] for row in raw_data]
+                features = [row[:self.label_index] + row[self.label_index + 1:] for row in raw_data]
 
             self.dataset = np.array(features)
 
             # Generate feature names
             self.features = np.array([str(i) for i in range(self.dataset.shape[1])])
-                
-            
+
             # Identify and separate numerical and categorical features
             if self.numerical_indices is not None:
                 self.features_numerical = self.dataset[:, self.numerical_indices].astype(float)
@@ -220,18 +275,18 @@ class TreeDataLoaderWithCategorical:
                     # Skip if there's a missing value
                     if '?' in line:
                         continue
-        
+
                     # Split the line into parts and extract the label and features
                     parts = line.strip().split(',')
                     label = parts[self.label_index]
                     parts.pop(self.label_index)
                     features = parts
-                    
+
                     # If the label is new, add it to the label mapping
                     if label not in label_mapping:
                         label_mapping[label] = label_counter
                         label_counter += 1
-                    
+
                     # Add the numeric label and features to their respective lists
                     labels.append(label_mapping[label])
                     dataset.append(features)
@@ -244,7 +299,7 @@ class TreeDataLoaderWithCategorical:
             self.features = np.array(features_list)
             self.labels = np.unique(self.true_labels_for_points)
 
-            if (self.numerical_indices is None):
+            if self.numerical_indices is None:
                 self.features_numerical = np.array([])
                 self.features_categorical = self.features
             else:
@@ -256,67 +311,48 @@ class TreeDataLoaderWithCategorical:
 
 
 def k_fold_tester(
-    k,
-    depth,
-    dataset,
-    true_labels_for_points,
-    labels,
-    features,
-    features_categorical=None,
-    features_numerical=None,
-    complete_tree=True,
-    min_support_level=0,
-    min_margin_level=1,
-    loandra_path=None
-):
+        k: int,
+        depth: int,
+        dataset: np.ndarray,
+        true_labels_for_points: np.ndarray,
+        labels: np.ndarray,
+        features: np.ndarray,
+        features_categorical: Optional[np.ndarray] = None,
+        features_numerical: Optional[np.ndarray] = None,
+        complete_tree: bool = True,
+        min_support_level: int = 0,
+        min_margin_level: int = 1,
+        loandra_path: Optional[str] = None
+) -> Tuple[np.ndarray, float]:
     """
     Performs k-fold cross-validation to train a SAT-based decision tree and measure accuracy.
 
     If `loandra_path` is provided, uses the LOANDRA solver. Otherwise, defaults to
     the built-in SAT solver in `SATreeCraft.solve()`.
 
-    Parameters
-    ----------
-    k : int
-        Number of folds for cross-validation.
-    depth : int
-        Fixed depth for the decision tree.
-    dataset : np.ndarray
-        Feature matrix (X). Each row corresponds to one data point.
-    true_labels_for_points : np.ndarray
-        Ground truth labels (y) for each row in `dataset`.
-    labels : np.ndarray
-        Array of all potential labels for the dataset.
-    features : np.ndarray
-        Array of feature names/indices used by the tree.
-    features_categorical : np.ndarray, optional
-        Indices/names of categorical features. Default is None.
-    features_numerical : np.ndarray, optional
-        Indices/names of numerical features. Default is None.
-    complete_tree : bool, optional
-        If True, uses a Complete (standard) tree structure;
-        if False, uses an Oblivious tree structure. Default is True.
-    min_support_level : int, optional
-        Minimum support constraint for leaves (default 0 means no constraint).
-    min_margin_level : int, optional
-        Minimum margin constraint (default 1 means no added margin).
-    loandra_path : str, optional
-        If provided, indicates the file path/location of the LOANDRA solver.
-        The decision tree is then constructed using `solve_loandra(loandra_path)`
-        instead of the default `.solve()` method. Default is None.
-
-    Returns
-    -------
-    k_accuracies : np.ndarray
-        Array of length k with training accuracies for each fold.
-    mean_score : float
-        Mean accuracy across all folds.
-
-    Notes
-    -----
+    Notes:
     - This function uses KFold from scikit-learn for cross-validation.
     - If `loandra_path` is None, it defaults to the standard solver.
     - If `loandra_path` is a valid path, LOANDRA integration is used.
+
+    Args:
+        k: Number of folds for cross-validation.
+        depth: Fixed depth for the decision tree.
+        dataset: Feature matrix (X). Each row corresponds to one data point.
+        true_labels_for_points: Ground truth labels (y) for each row in `dataset`.
+        labels: Array of all potential labels for the dataset.
+        features: Array of feature names/indices used by the tree.
+        features_categorical: Indices/names of categorical features. Default is None.
+        features_numerical: Indices/names of numerical features. Default is None.
+        complete_tree: If True, uses a Complete (standard) tree structure; if False, uses an Oblivious tree structure. Default is True.
+        min_support_level: Minimum support constraint for leaves (default 0 means no constraint).
+        min_margin_level: Minimum margin constraint (default 1 means no added margin).
+        loandra_path: If provided, indicates the file path/location of the LOANDRA solver.
+            The decision tree is then constructed using `solve_loandra(loandra_path)` instead of the default `.solve()` method. Default is None.
+
+    Returns:
+        k_accuracies: Array of length k with training accuracies for each fold.
+        mean_score: Mean accuracy across all folds.
     """
 
     # Determine tree structure type
@@ -360,6 +396,7 @@ def k_fold_tester(
         k_accuracies.append(acc)
         print('Fold complete. Accuracy =', acc)
 
-    k_accuracies = np.array(k_accuracies)
-    mean_score = np.mean(k_accuracies)
+    # Ensure the accuracies array is of type float
+    k_accuracies = np.array(k_accuracies, dtype=float)
+    mean_score = float(np.mean(k_accuracies))
     return k_accuracies, mean_score
