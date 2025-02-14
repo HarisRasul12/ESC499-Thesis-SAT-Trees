@@ -1,3 +1,37 @@
+"""
+=========== Module Description ===========
+
+common_sat_clauses.py
+
+This module implements the core functions for constructing SAT clauses that encode the decision tree’s structure and
+data routing constraints. It provides a set of tools to translate a decision tree learning problem into a CNF or
+weighted CNF (WCNF) formulation that a SAT solver can process.
+
+Key functionalities include:
+1. Feature Selection Clauses:
+   - Builds clauses ensuring that each branching node in the decision tree selects exactly one feature.
+   - Prevents multiple feature selections at the same node.
+
+2. Data Point Clauses:
+   - Generates clauses that direct data points through the tree based on their feature values.
+   - Enforces consistent routing by comparing the order of feature values for each data point.
+
+3. Redundant Constraints:
+   - Adds extra constraints to optimize the search space.
+   - Forces data points with the lowest or highest feature values to follow predetermined paths, reducing ambiguity.
+
+4. Path Validity and Deviations:
+   - Ensures that the decision path from the root to each leaf is valid.
+   - Introduces deviation clauses to handle cases where data points do not perfectly follow a designated path.
+
+Additional helper functions include:
+- Computing the ordering of data points for each feature.
+- Appending directional clauses for specific branch nodes and features.
+
+This module is essential for converting the decision tree learning problem into a SAT formulation, enabling objectives
+like achieving 100% training accuracy with a minimum height tree or maximizing accuracy within a fixed depth.
+"""
+
 from typing import Union, Dict, List, Tuple
 
 import numpy as np
