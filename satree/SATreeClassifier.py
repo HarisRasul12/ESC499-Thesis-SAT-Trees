@@ -5,30 +5,34 @@ SAT Tree model classifier. This module provides a classifier that uses a pre-bui
 and evaluate performance. The tree is based on the SAT solution for the training dataset.
 """
 
+from typing import List, Dict
+
 import numpy as np
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
-class SATreeClassifier:
-    
-    def __init__(self, tree):
-        """
-        A classifier that uses a pre-built decision tree to make predictions
-        and evaluate performance. The tree is based off the SAT solution for training dataset
 
-        Parameters:
-        - tree (dict): Pre-built decision tree structure from SAT solution.
+class SATreeClassifier:
+
+    def __init__(self, tree: List[Dict]) -> None:
+        """
+        Initializes the SATreeClassifier with a pre-built decision tree model derived from a SAT solution.
+
+        Args:
+            tree: A list of dictionaries representing the decision tree structure.
+                  Each dictionary corresponds to a node in the tree and includes keys such as 'type', 'feature',
+                  'threshold', 'children', and, for leaf nodes, 'label'.
         """
         self.tree_model = tree
 
-    def predict(self, data):
+    def predict(self, data: np.ndarray) -> np.ndarray:
         """
-        Predicts the labels for the given data.
+        Predicts the labels for the given data using the SAT-based decision tree.
 
         Args:
-        - data (array-like): The input data for which to predict labels. Each row corresponds to a single data point.
+            data: A numpy array of input samples where each row represents a single data point.
 
         Returns:
-        - predictions (numpy array): The predicted labels for the input data.
+            A numpy array containing the predicted labels for each input sample.
         """
         predictions = []
 
@@ -63,48 +67,48 @@ class SATreeClassifier:
 
             # Once a leaf node is reached, use its label for the prediction
             predictions.append(self.tree_model[node_index]['label'])
-        
+
         # Return predictions as a numpy array
         return np.array(predictions)
-    
-    def score(self, X, y_true):
-        """
-        Calculates the accuracy of the model.
 
-        Parameters:
-        - X (array-like): The input features for which to predict labels.
-        - y_true (array-like): The true labels.
+    def score(self, dataset: np.ndarray, y_true: np.ndarray) -> float:
+        """
+        Computes the accuracy of the classifier on the provided dataset.
+
+        Args:
+            dataset: A numpy array of input features for which predictions are made.
+            y_true: A numpy array of true labels corresponding to the dataset.
 
         Returns:
-        - score (float): Accuracy of the model on the given data.
+            A float representing the accuracy of the model.
         """
-        y_pred = self.predict(X)
+        y_pred = self.predict(dataset)
         return accuracy_score(y_true, y_pred)
-    
-    def get_classification_report(self, X, y_true):
-        """
-        Generates a classification report.
 
-        Parameters:
-        - X (array-like): The input features for which to predict labels.
-        - y_true (array-like): The true labels.
+    def get_classification_report(self, dataset: np.ndarray, y_true: np.ndarray) -> str:
+        """
+        Generates a classification report summarizing precision, recall, and F1 scores for the classifier's predictions.
+
+        Args:
+            dataset: A numpy array of input features for which predictions are made.
+            y_true: A numpy array of true labels corresponding to the dataset.
 
         Returns:
-        - report (str): Text summary of the precision, recall, F1 score for each class.
+            A string containing the classification report.
         """
-        y_pred = self.predict(X)
+        y_pred = self.predict(dataset)
         return classification_report(y_true, y_pred)
 
-    def get_confusion_matrix(self, X, y_true):
+    def get_confusion_matrix(self, dataset: np.ndarray, y_true: np.ndarray) -> np.ndarray:
         """
-        Computes the confusion matrix.
+        Computes the confusion matrix for the classifier's predictions.
 
-        Parameters:
-        - X (array-like): The input features for which to predict labels.
-        - y_true (array-like): The true labels.
+        Args:
+            dataset: A numpy array of input features for which predictions are made.
+            y_true: A numpy array of true labels corresponding to the dataset.
 
         Returns:
-        - matrix (array): Confusion matrix.
+            A numpy array representing the confusion matrix.
         """
-        y_pred = self.predict(X)
+        y_pred = self.predict(dataset)
         return confusion_matrix(y_true, y_pred)

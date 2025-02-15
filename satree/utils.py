@@ -16,7 +16,7 @@ the processing return the object type with all the stuff
 """
 
 import os
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Any
 
 import numpy as np
 import pandas as pd
@@ -315,10 +315,10 @@ def k_fold_tester(
         depth: int,
         dataset: np.ndarray,
         true_labels_for_points: np.ndarray,
-        labels: np.ndarray,
+        labels: List[Any],
         features: np.ndarray,
-        features_categorical: Optional[np.ndarray] = None,
-        features_numerical: Optional[np.ndarray] = None,
+        features_categorical: List[str],
+        features_numerical: List[str],
         complete_tree: bool = True,
         min_support_level: int = 0,
         min_margin_level: int = 1,
@@ -377,7 +377,7 @@ def k_fold_tester(
             features_numerical=features_numerical,
             classification_objective='max_accuracy',
             fixed_depth=depth,
-            min_support=min_support_level,
+            min_support_level=min_support_level,
             min_margin=min_margin_level,
             tree_structure=tree_structure
         )

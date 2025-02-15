@@ -132,7 +132,7 @@ def build_clauses_fixed_tree_min_margin_constraint_add(literals: Dict[str, int],
 
 
 def add_oblivious_tree_constraints(cnf: Union[WCNF, Any],  # Use CNF or WCNF as appropriate
-                                   features: List[Any],
+                                   features: np.ndarray,
                                    depth: int,
                                    literals: Dict[str, int],
                                    dataset: Optional[np.ndarray] = None,
