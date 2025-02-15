@@ -139,7 +139,7 @@ def add_thresholds_categorical(tree_structure: List[Dict[str, Any]],
     return tree_structure
 
 
-def find_min_depth_tree_categorical(features: List[str],
+def find_min_depth_tree_categorical(features: np.ndarray,
                                     features_categorical: List[str],
                                     features_numerical: List[str],
                                     labels: List[Any],

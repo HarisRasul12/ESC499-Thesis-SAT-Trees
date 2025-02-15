@@ -89,7 +89,7 @@ def build_clauses(literals: Dict[str, int],
 def set_branch_node_features(model: List[int],
                              literals: Dict[str, int],
                              tree_structure: List[Dict[str, Any]],
-                             features: List[str]) -> None:
+                             features: np.ndarray) -> None:
     """
     Decodes the SAT solution to determine the selected feature at each branching node.
 
@@ -127,7 +127,7 @@ def solve_cnf(cnf: CNF,
               leaf_nodes: List[int],
               tree_structure: List[Dict[str, Any]],
               labels: List[Any],
-              features: List[str]) -> Union[List[int], str]:
+              features: np.ndarray) -> Union[List[int], str]:
     """
     Attempts to solve the CNF encoding of the decision tree using a SAT solver.
 
@@ -251,7 +251,7 @@ def visualize_tree(tree_structure: List[Dict[str, Any]]) -> Digraph:
     return dot
 
 
-def find_min_depth_tree(features: List[str],
+def find_min_depth_tree(features: np.ndarray,
                         labels: List[Any],
                         true_labels_for_points: List[Any],
                         dataset: np.ndarray) -> Tuple[List[Dict[str, Any]], Dict[str, int], int, Union[List[int], str]]:

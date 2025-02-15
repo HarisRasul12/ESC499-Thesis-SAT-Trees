@@ -85,7 +85,7 @@ def solve_wcnf(wcnf: WCNF,
                leaf_nodes: List[int],
                tree_structure: List[Dict[str, Any]],
                labels: List[Any],
-               features: List[str]) -> Union[Tuple[List[int], Union[int, float]], str]:
+               features: np.ndarray) -> Union[Tuple[List[int], Union[int, float]], str]:
     """
     Attempts to solve the given CNF using a SAT solver.
 
@@ -121,7 +121,7 @@ def solve_wcnf(wcnf: WCNF,
         return "No solution exists"
 
 
-def find_fixed_depth_tree(features: List[str],
+def find_fixed_depth_tree(features: np.ndarray,
                           labels: List[Any],
                           true_labels_for_points: List[Any],
                           dataset: np.ndarray,

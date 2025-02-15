@@ -81,7 +81,7 @@ def build_clauses_categorical_fixed(literals: Dict[str, int],
     return wcnf
 
 
-def find_fixed_depth_tree_categorical(features: List[str],
+def find_fixed_depth_tree_categorical(features: np.ndarray,
                                       features_categorical: List[str],
                                       features_numerical: List[str],
                                       labels: List[Any],

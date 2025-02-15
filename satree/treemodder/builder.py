@@ -21,6 +21,8 @@ translation of tree structure and decision logic into a formal SAT representatio
 
 from typing import List, Dict, Any, Tuple
 
+import numpy as np
+
 
 def build_complete_tree(depth: int) -> Tuple[List[Dict[str, Any]], List[int], List[int]]:
     """
@@ -68,7 +70,7 @@ def build_complete_tree(depth: int) -> Tuple[List[Dict[str, Any]], List[int], Li
 
 def create_literals(branch_nodes: List[int],
                     leaf_nodes: List[int],
-                    feature_indices: List[int],
+                    feature_indices: np.ndarray,
                     class_labels: List[Any],
                     dataset_size: int,
                     fixed_tree: bool = False) -> Tuple[Dict[str, int], int]:
