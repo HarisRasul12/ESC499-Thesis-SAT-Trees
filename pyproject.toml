@@ -1,0 +1,18 @@
+[project]
+name = "SATreeCraft"
+version = "0.1.0"
+description = "SATreeCraft: A tool for constructing and solving SAT/WCNF formulations with integrated data science utilities."
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.20",         # Robust array operations and numerical routines.
+    "scipy>=1.6",          # Advanced numerical algorithms.
+    "scikit-learn>=0.24",   # Machine learning utilities.
+    "python-sat[aiger,approxmc,cryptosat,pblib]>=0.1.7.dev6",  # SAT solver with optional extras.
+    "graphviz>=0.13",       # For rendering decision trees.
+    "matplotlib>=3.3",      # For plotting diagnostic outputs.
+    "pandas>=1.0"           # For data manipulation and analysis.
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
