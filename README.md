@@ -177,13 +177,3 @@ The solver will export the CNF file in DIMACS format, call Loandra, and postproc
 ## License
 SATreeCraft is fully open source. This project is licensed under the MIT License. 
 See the [LICENSE](LICENSE.txt) file for details.
-
----
-
-## Contact
-
-For questions, feedback, or support, please open an issue on GitHub or contact the development team at [your.email@example.com](mailto:your.email@example.com).
-
----
-
-*SATreeCraft is developed and maintained by [Your Name or Organization].*
