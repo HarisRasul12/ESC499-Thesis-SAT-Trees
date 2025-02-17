@@ -289,7 +289,7 @@ class SATreeCraft:
                 tree_with_thresholds = add_thresholds_categorical(tree, literals, solution, dataset,
                                                                   features_categorical)
                 dot = visualize_tree(tree_with_thresholds)
-                folder = Path('../images/min_height/')
+                folder = Path('graphviz_diagrams/min_height/')
                 folder.mkdir(parents=True, exist_ok=True)
                 if use_loandra:
                     dot.render(
@@ -364,7 +364,7 @@ class SATreeCraft:
         if solution != "No solution exists":
             tree_with_thresholds = add_thresholds_categorical(tree, literals, solution, dataset, features_categorical)
             dot = visualize_tree(tree_with_thresholds)
-            folder = Path('../images/fixed_height/')
+            folder = Path('graphviz_diagrams/fixed_height/')
             folder.mkdir(parents=True, exist_ok=True)
             if use_loandra:
                 dot.render(
@@ -434,7 +434,7 @@ class SATreeCraft:
             if solution != "No solution exists":
                 tree_with_thresholds = add_thresholds(tree, literals, solution, dataset)
                 dot = visualize_tree(tree_with_thresholds)
-                folder = Path('../images/min_height/')
+                folder = Path('graphviz_diagrams/min_height/')
                 folder.mkdir(parents=True, exist_ok=True)  # Ensure the directory exists
                 if use_loandra:
                     dot.render(folder / f'LOANDRA_SOLVED_binary_decision_tree_min_depth_{depth}', format='png',
@@ -564,7 +564,7 @@ class SATreeCraft:
         if solution != "No solution exists":
             tree_with_thresholds = add_thresholds(tree, literals, solution, dataset)
             dot = visualize_tree(tree_with_thresholds)
-            folder = Path('../images/fixed_height/')
+            folder = Path('graphviz_diagrams/fixed_height/')
             folder.mkdir(parents=True, exist_ok=True)
             if use_loandra:
                 dot.render(folder / f'LOANDRA_SOLVED_binary_decision_tree_fixed_depth_{depth}', format='png',
@@ -595,7 +595,7 @@ class SATreeCraft:
             The filesystem path (as a string) to the saved plot image.
         """
         # Define the directory and filename
-        directory = Path('../images/cluster_trees/')
+        directory = Path('graphviz_diagrams/cluster_trees/')
         directory.mkdir(parents=True, exist_ok=True)  # Ensure the directory exists
         filename = f'cluster_tree_with_cluster_size{k_clusters}.png'
         full_path = directory / filename
