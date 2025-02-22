@@ -86,79 +86,73 @@ Users must set the path to the Loandra solver in accordance with their solving m
 
 Below is a brief example demonstrating how to construct a decision tree classifier from your data and evaluate its performance.
 
-### Classification Example
+### Fixed Height Tree Example
 
 ```python
-import numpy as np
-from satree import SATreeCraft, SATreeClassifier
 
-# Assume X is your feature matrix and y are the true labels
-X = np.array([
-    [5.1, 3.5, 1.4, 0.2],
-    [4.9, 3.0, 1.4, 0.2],
-    [6.7, 3.1, 4.7, 1.5],
-    [5.6, 3.0, 4.1, 1.3],
-    [6.3, 3.3, 6.0, 2.5]
-])
-y = np.array([0, 0, 1, 1, 2])
-features = np.array(['sepal_length', 'sepal_width', 'petal_length', 'petal_width'])
-# Define which features are categorical (if any) and which are numerical
-features_categorical = []  # e.g., if none are categorical
-features_numerical = features  # all features are numerical here
+from satree.utils import TreeDataLoaderBinaryNumerical
+from satree.SATreeCraft import SATreeCraft # Tree solver framework
 
-# For a minimum-height tree classification problem:
-solver = SATreeCraft(
-    dataset=X,
-    features=features,
-    labels=np.unique(y),
-    true_labels_for_points=y,
-    features_categorical=features_categorical,
-    features_numerical=features_numerical,
-    classification_objective='min_height',  # or 'max_accuracy'
-    fixed_depth=None,  # Not used for min_height objective
-    tree_structure='Complete'
-)
-solver.solve()
+file_path_to_test = '../data/wine/wine.data'
+delimiter = ','
+label_position = 0
 
-# Build a classifier from the obtained decision tree model
-classifier = SATreeClassifier(solver.model)
-accuracy = classifier.score(X, y)
-print("Training accuracy:", accuracy)
+data_loader = TreeDataLoaderBinaryNumerical(file_path=file_path_to_test, delimiter=delimiter, label_position= label_position)
+
+max_accuracy_numerical_problem = SATreeCraft(dataset=data_loader.dataset,
+                                             features=data_loader.features,labels=data_loader.labels,
+                                             true_labels_for_points=data_loader.true_labels_for_points,
+                                             classification_objective='max_accuracy',
+                                             fixed_depth=2)
+
+max_accuracy_numerical_problem.solve()
+
+# # Or, use Loandra for faster solving
+# # Path to the loandra executable (recommended to use for faster solving). To install, follow: https://github.com/jezberg/loandra
+# loandra_path = "/.../loandra"  # Path to your loandra executable (Change as needed)
+# max_accuracy_numerical_problem.solve_loandra(loandra_path= loandra_path)
+
+print("Final Model: ", max_accuracy_numerical_problem.model)
+print("Min cost found: ", max_accuracy_numerical_problem.min_cost)
 ```
 
 ### Clustering Example
 
 ```python
-# For a clustering problem, define additional parameters:
-k_clusters = 3
-depth = 3  # fixed depth for clustering trees
-epsilon = 0.5
-# Optionally define must-link and cannot-link pairs (as numpy arrays)
-ml_pairs = np.array([[0, 1]])
-cl_pairs = np.array([[2, 3]])
+import numpy as np
 
-# Initialize SATreeCraft for clustering (set is_classification=False)
-cluster_solver = SATreeCraft(
-    dataset=X,
-    features=features,
-    labels=np.unique(y),
-    true_labels_for_points=y,
-    features_categorical=features_categorical,
-    features_numerical=features_numerical,
-    classification_objective='min_height',  # not used in clustering mode
-    fixed_depth=depth,
-    k_clusters=k_clusters,
-    clustering_objective='max_diameter',  # or 'bicriteria'
-    is_clustering=True,
-    epsilon=epsilon,
-    cl_pairs=cl_pairs,
-    ml_pairs=ml_pairs
-)
-cluster_solver.solve()
+from satree.utils import TreeDataLoaderBinaryNumerical # Dataloader and K-fold mechanism
+from satree.SATreeCraft import SATreeCraft # Tree solver framework
 
-# The clustering solution is available as:
-print("Cluster assignments:", cluster_solver.cluster_assignments)
-print("Cluster diameters:", cluster_solver.cluster_diameters)
+file_path_to_test = '../data/wine/wine.data'
+delimiter = ','
+label_position = 0
+
+data_loader = TreeDataLoaderBinaryNumerical(file_path=file_path_to_test, delimiter=delimiter, label_position= label_position)
+
+epsilon, k_clusters, depth = 0.1, 3, 3
+
+cl_pairs = np.array([]) # cannot-link pairs (add as needed)
+ml_pairs = np.array([]) # must-link pairs (add as needed)
+
+clustering_problem = SATreeCraft(dataset=data_loader.dataset,
+                                 features=data_loader.features,
+                                 k_clusters=k_clusters,
+                                 ml_pairs=ml_pairs,
+                                 cl_pairs=cl_pairs,
+                                 epsilon=epsilon,
+                                 fixed_depth=depth)
+
+clustering_problem.solve() 
+
+# # Or, use Loandra for faster solving
+# # Path to the loandra executable (recommended to use for faster solving). To install, follow: https://github.com/jezberg/loandra
+# loandra_path = "/.../loandra"  # Path to your loandra executable (Change as needed)
+# clustering_problem.solve_loandra(loandra_path)
+
+print(f"Results for depth {depth}:")
+print(clustering_problem.cluster_assignments)
+print(clustering_problem.cluster_diameters)
 ```
 
 ### Loandra Support
