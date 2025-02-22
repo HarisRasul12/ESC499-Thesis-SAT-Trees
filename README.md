@@ -1,7 +1,6 @@
 # SATreeCraft: SAT-Based Decision Tree & Clustering Solver
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![PyPI version](https://img.shields.io/pypi/v/satreecraft.svg)](https://pypi.org/project/satreecraft/)
 <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.8%20to%203.12-blue.svg"></a>
 
 **Version:** v1.2 – January 2025
