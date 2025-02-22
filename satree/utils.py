@@ -16,7 +16,7 @@ the processing return the object type with all the stuff
 """
 
 import os
-from typing import Optional, List, Tuple, Any
+from typing import Optional, List, Tuple, Any, Union
 
 import numpy as np
 import pandas as pd
@@ -315,7 +315,7 @@ def k_fold_tester(
         depth: int,
         dataset: np.ndarray,
         true_labels_for_points: np.ndarray,
-        labels: List[Any],
+        labels: Union[np.ndarray, List[Any]],
         features: np.ndarray,
         features_categorical: Optional[List[str]] = None,
         features_numerical: Optional[List[str]] = None,

@@ -171,6 +171,21 @@ solver.solve_loandra(loandra_path)
 ```
 The solver will export the CNF file in DIMACS format, call Loandra, and postprocess the solution.
 
+---
+
+## SATree Test Suite
+
+This folder contains a complete test suite for the SATree Python library. The tests are written using pytest,
+cover unit tests for core classes (such as `SATreeClassifier` and `SATreeCraft`), submodules (classification, clustering,
+loandra support, treemodder, and utils), and include integration tests with fixtures and mocking.
+
+### Running the Tests
+
+To run all tests:
+
+```bash
+pytest
+```
 
 ---
 
