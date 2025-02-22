@@ -29,14 +29,12 @@ satisfies both the structural constraints and the classification objectives for 
 categorical (and numerical) features.
 """
 
-from typing import List, Dict, Any, Tuple, Union
+from typing import List, Dict, Any
 
 import numpy as np
 from pysat.formula import CNF
 
 from satree.classification.common_ops import compute_numerical_threshold
-from satree.classification.min_depth import solve_cnf, visualize_tree
-from satree.treemodder.builder import build_complete_tree, create_literals
 from satree.classification.sat_clauses import add_clauses_for_features_and_paths
 from satree.common_sat_clauses import add_feature_selection_clauses_for_branching_nodes
 
@@ -137,62 +135,3 @@ def add_thresholds_categorical(tree_structure: List[Dict[str, Any]],
 
     set_thresholds_categorical(0, dataset)
     return tree_structure
-
-
-def find_min_depth_tree_categorical(features: np.ndarray,
-                                    features_categorical: List[str],
-                                    features_numerical: List[str],
-                                    labels: List[Any],
-                                    true_labels_for_points: List[Any],
-                                    dataset: np.ndarray) -> Tuple[
-    List[Dict[str, Any]], Dict[str, int], int, Union[List[int], str]]:
-    """
-    Finds a minimum-depth decision tree for a categorical classification problem using SAT solving.
-
-    This function incrementally increases the depth of a complete binary tree until a SAT solver solution is found.
-    For each depth, it:
-      1. Builds a complete tree.
-      2. Creates SAT literals.
-      3. Constructs CNF clauses using a categorical encoding.
-      4. Attempts to solve the CNF using a SAT solver.
-      5. If a solution is found, it adds thresholds to the tree nodes and visualizes the tree.
-      6. Otherwise, it increases the depth and tries again.
-
-    Args:
-        features: List of feature names or indices used for splitting.
-        features_categorical: List of indices or identifiers for categorical features.
-        features_numerical: List of indices or identifiers for numerical features.
-        labels: Possible class labels for the data points.
-        true_labels_for_points: The true class labels for each data point.
-        dataset: The dataset containing data points (each data point is a tuple or array).
-
-    Returns:
-        A tuple containing:
-            - tree_with_thresholds: The decision tree with thresholds added (if a solution is found).
-            - literals: A dictionary mapping literal names to their indices.
-            - depth: The depth of the found tree.
-            - solution: The SAT solver's model solution, or "No solution exists" if unsolvable.
-    """
-
-    depth = 1  # Start with a depth of 1
-    solution = "No solution exists"
-    tree_with_thresholds = None
-    literals = None
-
-    while solution == "No solution exists":
-        tree, TB, TL = build_complete_tree(depth)
-        literals = create_literals(TB, TL, features, labels, len(dataset), False)[0]
-        cnf = build_clauses_categorical(literals, dataset, TB, TL, len(features), features_categorical,
-                                        features_numerical, labels, true_labels_for_points)
-        solution = solve_cnf(cnf, literals, TL, tree, labels, features)
-
-        if solution != "No solution exists":
-            tree_with_thresholds = add_thresholds_categorical(tree, literals, solution, dataset, features_categorical)
-            dot = visualize_tree(tree_with_thresholds)
-            dot.render(f'images/min_height/binary_decision_tree_min_depth_with_categorical_features_depth_{depth}',
-                       format='png', cleanup=True)
-        else:
-            print("No solution at depth: ", depth)
-            depth += 1  # Increase the depth and try again
-
-    return tree_with_thresholds, literals, depth, solution

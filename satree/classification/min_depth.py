@@ -32,7 +32,7 @@ the encoding’s constraints, effectively combining structural validity with cla
 in a rigorous mathematical framework.
 """
 
-from typing import List, Dict, Any, Tuple, Union
+from typing import List, Dict, Any, Union
 
 import numpy as np
 from graphviz import Digraph
@@ -40,7 +40,6 @@ from pysat.formula import CNF
 from pysat.solvers import Solver
 
 from satree.classification.common_ops import compute_numerical_threshold
-from satree.treemodder.builder import build_complete_tree, create_literals
 from satree.classification.sat_clauses import construct_maxsat_clauses
 from satree.common_sat_clauses import add_redundant_constraints
 
@@ -249,54 +248,3 @@ def visualize_tree(tree_structure: List[Dict[str, Any]]) -> Digraph:
     dot = Digraph()
     add_nodes(dot, tree_structure)
     return dot
-
-
-def find_min_depth_tree(features: np.ndarray,
-                        labels: List[Any],
-                        true_labels_for_points: List[Any],
-                        dataset: np.ndarray) -> Tuple[List[Dict[str, Any]], Dict[str, int], int, Union[List[int], str]]:
-    """
-    Finds the minimum depth decision tree for a classification problem using SAT-based encoding.
-
-    The function incrementally increases the depth of a complete binary tree until a satisfiable solution is found.
-    For each depth, it:
-      - Builds a complete tree.
-      - Generates SAT literals.
-      - Constructs the corresponding CNF clauses.
-      - Attempts to solve the CNF with a SAT solver.
-      - If a solution is found, it computes thresholds for the branching nodes and visualizes the tree.
-      - If no solution is found, it increases the depth and tries again.
-
-    Args:
-        features: List of feature identifiers used for splitting in the decision tree.
-        labels: List of possible class labels.
-        true_labels_for_points: The true class labels for each data point.
-        dataset: The dataset containing data points (each data point is represented as a tuple or array).
-
-    Returns:
-        A tuple containing:
-            - tree_with_thresholds: The final decision tree structure with computed thresholds.
-            - literals: A dictionary mapping SAT literal names to their variable indices.
-            - depth: The depth of the found decision tree.
-            - solution: The SAT solver's solution if found, or "No solution exists" if unsolvable.
-    """
-    depth = 1  # Start with a depth of 1
-    solution = "No solution exists"
-    tree_with_thresholds = None
-    literals = None
-
-    while solution == "No solution exists":
-        tree, TB, TL = build_complete_tree(depth)
-        literals = create_literals(TB, TL, features, labels, len(dataset), False)[0]
-        cnf = build_clauses(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
-        solution = solve_cnf(cnf, literals, TL, tree, labels, features)
-
-        if solution != "No solution exists":
-            tree_with_thresholds = add_thresholds(tree, literals, solution, dataset)
-            dot = visualize_tree(tree_with_thresholds)
-            dot.render(f'images/min_height/binary_decision_tree_min_depth_{depth}', format='png', cleanup=True)
-        else:
-            print('no solution at depth', depth)
-            depth += 1  # Increase the depth and try again
-
-    return tree_with_thresholds, literals, depth, solution

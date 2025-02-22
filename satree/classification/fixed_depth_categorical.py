@@ -29,15 +29,11 @@ tree structure, and extract a decision tree that is both structurally valid and 
 classification accuracy.
 """
 
-from typing import List, Dict, Any, Tuple, Union
+from typing import List, Dict, Any
 
 import numpy as np
 from pysat.formula import WCNF
 
-from satree.classification.min_depth_categorical import add_thresholds_categorical
-from satree.classification.fixed_depth import solve_wcnf
-from satree.classification.min_depth import visualize_tree
-from satree.treemodder.builder import build_complete_tree, create_literals
 from satree.classification.sat_clauses import add_clauses_for_features_and_paths, add_classification_clauses
 from satree.common_sat_clauses import add_feature_selection_clauses_for_branching_nodes
 
@@ -79,55 +75,3 @@ def build_clauses_categorical_fixed(literals: Dict[str, int],
     wcnf = add_classification_clauses(wcnf, literals, dataset, leaf_nodes, true_labels)
 
     return wcnf
-
-
-def find_fixed_depth_tree_categorical(features: np.ndarray,
-                                      features_categorical: List[str],
-                                      features_numerical: List[str],
-                                      labels: List[Any],
-                                      true_labels_for_points: List[Any],
-                                      dataset: np.ndarray,
-                                      depth: int) -> str | Tuple[
-    List[Dict[str, Any]], Dict[str, int], int, Union[List[int], str], Union[int, float]]:
-    """
-    Finds a fixed-depth decision tree for a categorical classification problem using SAT encoding.
-
-    This function builds a complete decision tree of the specified depth, generates SAT literals, and
-    constructs CNF clauses using a fixed encoding that handles both categorical and numerical features.
-    It then attempts to solve the resulting CNF with a SAT solver. If a solution is found, the tree is
-    augmented with computed thresholds (or splits) for its branching nodes, and the tree is visualized by
-    rendering an image. If no solution is found, an error message is printed and "No solution" is returned.
-
-    Args:
-        features: List of feature identifiers used for splitting in the decision tree.
-        features_categorical: List of identifiers for categorical features.
-        features_numerical: List of identifiers for numerical features.
-        labels: List of possible class labels.
-        true_labels_for_points: The true labels for each data point in the dataset.
-        dataset: The dataset where each row represents a data point.
-        depth: The fixed depth to be used for constructing the decision tree.
-
-    Returns:
-        A tuple containing:
-            - tree_with_thresholds: The decision tree structure with thresholds assigned to branching nodes.
-            - literals: A dictionary mapping SAT literal names to their corresponding variable indices.
-            - depth: The fixed depth of the decision tree.
-            - solution: The solution from the SAT solver if one is found, or "No solution" if unsolvable.
-            - cost: The cost associated with the SAT solution.
-    """
-    tree, TB, TL = build_complete_tree(depth)
-    literals = create_literals(TB, TL, features, labels, len(dataset), True)[0]
-    wcnf = build_clauses_categorical_fixed(literals, dataset, TB, TL, len(features), features_categorical,
-                                           features_numerical, labels, true_labels_for_points)
-    solution, cost = solve_wcnf(wcnf, literals, TL, tree, labels, features)
-
-    if solution != "No solution exists":
-        tree_with_thresholds = add_thresholds_categorical(tree, literals, solution, dataset, features_categorical)
-        dot = visualize_tree(tree_with_thresholds)
-        dot.render(f'images/fixed_height/binary_decision_tree_fixed_with_categorical_features_depth_{depth}',
-                   format='png', cleanup=True)
-    else:
-        print('could not find solution')
-        return 'No solution'
-
-    return tree_with_thresholds, literals, depth, solution, cost

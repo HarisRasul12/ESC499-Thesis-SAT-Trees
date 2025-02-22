@@ -36,10 +36,8 @@ import numpy as np
 from pysat.formula import WCNF
 from pysat.examples.rc2 import RC2
 
-from satree.treemodder.builder import build_complete_tree, create_literals
-
 from satree.common_sat_clauses import add_redundant_constraints
-from satree.classification.min_depth import set_branch_node_features, add_thresholds, visualize_tree
+from satree.classification.min_depth import set_branch_node_features
 from satree.classification.sat_clauses import construct_maxsat_clauses, add_classification_clauses
 
 
@@ -119,48 +117,3 @@ def solve_wcnf(wcnf: WCNF,
         return model, cost
     else:
         return "No solution exists"
-
-
-def find_fixed_depth_tree(features: np.ndarray,
-                          labels: List[Any],
-                          true_labels_for_points: List[Any],
-                          dataset: np.ndarray,
-                          depth: int) -> str | Tuple[
-    List[Dict[str, Any]], Dict[str, int], int, Union[List[int], str], Union[int, float]]:
-    """
-    Finds a fixed-depth decision tree for a classification problem using SAT-based encoding.
-
-    This function builds a complete binary decision tree of the specified depth, generates SAT literals,
-    and constructs CNF clauses using a fixed-tree encoding. It then attempts to solve the CNF with a SAT solver.
-    If a solution is found, thresholds are added to the tree's branching nodes and the tree is visualized.
-    If no solution is found, the function prints an error message and returns "No solution".
-
-    Args:
-        features: List of feature identifiers used for splitting in the decision tree.
-        labels: List of possible class labels for the data points.
-        true_labels_for_points: The true labels for each data point in the dataset.
-        dataset: The dataset, where each element represents a data point.
-        depth: The fixed depth at which to construct the decision tree.
-
-    Returns:
-        A tuple containing:
-            - tree_with_thresholds: The decision tree with thresholds assigned to branching nodes.
-            - literals: A dictionary mapping literal names to their corresponding variable indices.
-            - depth: The fixed depth of the decision tree.
-            - solution: The SAT solver's solution if one is found, or "No solution" otherwise.
-            - cost: The cost associated with the SAT solution.
-    """
-    tree, TB, TL = build_complete_tree(depth)
-    literals = create_literals(TB, TL, features, labels, len(dataset), True)[0]
-    wcnf = build_clauses_fixed_tree(literals, dataset, TB, TL, len(features), labels, true_labels_for_points)
-    solution, cost = solve_wcnf(wcnf, literals, TL, tree, labels, features)
-
-    if solution != "No solution exists":
-        tree_with_thresholds = add_thresholds(tree, literals, solution, dataset)
-        dot = visualize_tree(tree_with_thresholds)
-        dot.render(f'images/fixed_height/binary_decision_tree_fixed_depth_{depth}', format='png', cleanup=True)
-    else:
-        print('could not find solution')
-        return 'No solution'
-
-    return tree_with_thresholds, literals, depth, solution, cost
